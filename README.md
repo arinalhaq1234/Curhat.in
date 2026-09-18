@@ -1,6 +1,6 @@
-﻿# Curhat.in - AI Psychological Counseling Platform
+﻿# Curhat.in 
 
-**Curhat.in** adalah platform aplikasi konseling psikologi berbasis kecerdasan buatan (AI-powered). Proyek ini dirancang untuk membantu pengguna menyampaikan keluh kesah atau curhatan baik melalui teks maupun rekaman suara/podcast. Sistem menggunakan model **Google Gemini API (Multimodal Text & Audio)** yang dikombinasikan dengan basis data **Supabase (PostgreSQL)** serta metode *Retrieval-Augmented Generation* (RAG) untuk menghasilkan analisis emosi dan draf penanganan awal yang empatik dan akurat.
+Curhat.in adalah platform AI yang menjadi ruang aman bagi mahasiswa atau siapa saja yang merasa tidak memiliki tempat untuk berbagi cerita, baik lewat teks maupun rekaman suara/podcast. Sistem menggunakan Google Gemini API, Supabase, dan metode RAG untuk menganalisis emosi pengguna dan memberikan rekomendasi penenangan diri yang positif sesuai kondisi mereka.
 
 ## Anggota Kelompok
 1. Arum Putri Wicaksana      : 24782039
