@@ -7,7 +7,7 @@ load_dotenv()
 
 # 1. Initialize API Key Securely
 # It will look for the key in your environment variables or .env file
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCIlOoWTt1XRhGPF5hTNg_mOCOiKx2G2UI")
+API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY)
 
 def uji_analisis_teks(teks_curhat):
