@@ -1,13 +1,9 @@
-# QUIZ
-
-# Interconnecting between Digital Awareness and Application Design
 
 **Mata Kuliah:** Pemrograman Internet II (PIE 1516)
 **Program Studi:** Teknologi Rekayasa Internet
 **Politeknik Negeri Lampung**
 **Nama:** M Arinal Haq
 **NPM:** 24782052
-**Tahun:** 2026
 
 ---
 
