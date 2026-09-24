@@ -38,6 +38,7 @@ Contohnya, sekarang ini kita bisa mencari informasi melalui internet, berkomunik
 Dari modul ini saya juga memahami bahwa dalam membuat aplikasi, kita ini tidak cukup hanya memikirkan teknologinya saja. Kita juga harus melihat dan memahami masalah yang dialami oleh pengguna dan bagaimana aplikasi yang dibuat bisa membantu mereka.
 
 Hal ini sesuai dengan konsep aplikasi Curhat.in yang sedang saya kembangkan. Biasanya mahasiswa yang ingin bercerita itu harus mencari orang yang dipercaya dan menyampaikannya secara langsung. Namun, tidak semua mahasiswa itu nyaman untuk melakukan hal tersebut. Oleh karena itu, Curhat.in dibuat sebagai salah satu pilihan agar mahasiswa bisa menyampaikan cerita atau keluh kesah melalui teks maupun suara dengan cara yang lebih mudah dan simpel.
+
 ---
 
 ## Modul 2: You'll Need Some Basic Tools
