@@ -1,3 +1,8 @@
+Nama : Syifa Amalia
+NPM : 24782064
+Program Studi: Teknologi Rekayasa Internet
+Mata Kuliah: Pemrograman Internet II
+
 # Bagian 1. Identitas dan Topik Proyek Aplikasi
 - Nama aplikasi : Curhat.in
 
