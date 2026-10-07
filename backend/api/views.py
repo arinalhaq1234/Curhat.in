@@ -48,10 +48,9 @@ def curhat_text(request):
         # 1. Analisis teks menggunakan Gemini
         hasil_ai = analisis_teks(teks_curhat)
 
-        # 2. Simpan hasil ke Supabase PostgreSQL
+        # 2. Simpan hasil analisis ke database
         riwayat = RiwayatCurhat.objects.create(
             teks=teks_curhat,
-            url_audio=None,
             emosi=hasil_ai.get("emosi"),
             akar_masalah=hasil_ai.get("akar_masalah"),
             rekomendasi=hasil_ai.get("rekomendasi"),
@@ -71,11 +70,25 @@ def curhat_text(request):
         )
 
     except Exception as e:
+        error_message = str(e)
+
+        # Jika Gemini terkena rate limit
+        if "429" in error_message or "rate limit" in error_message.lower():
+            return Response(
+                {
+                    "success": False,
+                    "message": "Batas penggunaan Gemini sedang tercapai.",
+                    "error": "Silakan coba kembali beberapa saat lagi."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        # Error lainnya
         return Response(
             {
                 "success": False,
                 "message": "Curhatan gagal diproses.",
-                "error": str(e)
+                "error": error_message
             },
             status=status.HTTP_503_SERVICE_UNAVAILABLE
         )
@@ -138,7 +151,6 @@ def curhat_audio(request):
         )
 
         # 3. Validasi hasil Gemini
-        # Jika file ternyata lagu/musik atau bukan curhatan
         if hasil_ai.get("valid") is False:
             return Response(
                 {
@@ -151,14 +163,12 @@ def curhat_audio(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 4. Simpan hasil analisis ke Supabase PostgreSQL
+        # 4. Simpan file audio sebagai data biner
+        #    langsung ke PostgreSQL/Supabase
         riwayat = RiwayatCurhat.objects.create(
             teks=None,
-
-            # Untuk sementara NULL karena Supabase Storage
-            # belum kita integrasikan
-            url_audio=None,
-
+            audio_file=audio_bytes,
+            audio_name=file_audio.name,
             emosi=hasil_ai.get("emosi"),
             akar_masalah=hasil_ai.get("akar_masalah"),
             rekomendasi=hasil_ai.get("rekomendasi"),
@@ -178,11 +188,25 @@ def curhat_audio(request):
         )
 
     except Exception as e:
+        error_message = str(e)
+
+        # Jika Gemini terkena rate limit
+        if "429" in error_message or "rate limit" in error_message.lower():
+            return Response(
+                {
+                    "success": False,
+                    "message": "Batas penggunaan Gemini sedang tercapai.",
+                    "error": "Silakan coba kembali beberapa saat lagi."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        # Error lainnya
         return Response(
             {
                 "success": False,
                 "message": "Audio gagal diproses.",
-                "error": str(e)
+                "error": error_message
             },
             status=status.HTTP_503_SERVICE_UNAVAILABLE
         )

@@ -4,16 +4,28 @@ from django.db import models
 class RiwayatCurhat(models.Model):
     teks = models.TextField(
         blank=True,
-        null=True
+        null=True,
+        help_text="Diisi jika curhat via teks"
     )
 
-    url_audio = models.URLField(
+    # File audio disimpan langsung sebagai data biner di PostgreSQL
+    audio_file = models.BinaryField(
         blank=True,
-        null=True
+        null=True,
+        help_text="Data file audio"
     )
 
+    # Menyimpan nama asli file
+    audio_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Nama file audio"
+    )
+
+    # Hasil analisis Gemini
     emosi = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         null=True
     )
@@ -28,9 +40,7 @@ class RiwayatCurhat(models.Model):
         null=True
     )
 
-    waktu = models.DateTimeField(
-        auto_now_add=True
-    )
+    waktu = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Riwayat Curhat {self.id} - {self.emosi}"
+        return f"Curhatan ({self.waktu.strftime('%d-%m-%Y %H:%M')})"
