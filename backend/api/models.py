@@ -8,14 +8,14 @@ class RiwayatCurhat(models.Model):
         help_text="Diisi jika curhat via teks"
     )
 
-    # File audio disimpan langsung sebagai data biner di PostgreSQL
+    # File audio disimpan sebagai data biner
     audio_file = models.BinaryField(
         blank=True,
         null=True,
         help_text="Data file audio"
     )
 
-    # Menyimpan nama asli file
+    # Menyimpan nama asli file audio
     audio_name = models.CharField(
         max_length=255,
         blank=True,
@@ -40,7 +40,9 @@ class RiwayatCurhat(models.Model):
         null=True
     )
 
-    waktu = models.DateTimeField(auto_now_add=True)
+    waktu = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
         return f"Curhatan ({self.waktu.strftime('%d-%m-%Y %H:%M')})"

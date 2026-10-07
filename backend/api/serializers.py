@@ -16,7 +16,7 @@ class RiwayatCurhatSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "teks",
-            "url_audio",
+            "audio_name",
             "emosi",
             "akar_masalah",
             "rekomendasi",
@@ -25,6 +25,7 @@ class RiwayatCurhatSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
+            "audio_name",
             "emosi",
             "akar_masalah",
             "rekomendasi",
