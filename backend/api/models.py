@@ -1,21 +1,29 @@
+from django.conf import settings
 from django.db import models
 
 
 class RiwayatCurhat(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="riwayat_curhat",
+        null=True,
+        blank=True,
+        help_text="Pemilik data curhat"
+    )
+
     teks = models.TextField(
         blank=True,
         null=True,
         help_text="Diisi jika curhat via teks"
     )
 
-    # File audio disimpan sebagai data biner
     audio_file = models.BinaryField(
         blank=True,
         null=True,
         help_text="Data file audio"
     )
 
-    # Menyimpan nama asli file audio
     audio_name = models.CharField(
         max_length=255,
         blank=True,
@@ -23,7 +31,6 @@ class RiwayatCurhat(models.Model):
         help_text="Nama file audio"
     )
 
-    # Hasil analisis Gemini
     emosi = models.CharField(
         max_length=100,
         blank=True,
