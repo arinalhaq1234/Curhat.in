@@ -1,6 +1,13 @@
+import { loginUser } from '@/services/api';
+import { saveSession } from '@/services/session';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -8,73 +15,226 @@ import {
 } from 'react-native';
 
 export default function LoginScreen() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setError('');
+
+    if (!username.trim() || !password.trim()) {
+      setError('Username dan password wajib diisi.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await loginUser(
+        username.trim(),
+        password
+      );
+
+      const accessToken =
+        data.access ??
+        data.data?.access;
+
+      const refreshToken =
+        data.refresh ??
+        data.data?.refresh;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error(
+          'Token login tidak ditemukan pada respons backend.'
+        );
+      }
+
+      await saveSession(
+        String(accessToken),
+        String(refreshToken)
+      );
+
+      router.replace('/home');
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Login gagal. Silakan coba lagi.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
-        <Text style={styles.logo}>Curhat.in</Text>
+        <Image
+          source={require('../../assets/images/curhatin-logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
         <Text style={styles.subtitle}>
           Tempat aman untuk bercerita dan memahami perasaanmu.
         </Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>Selamat Datang</Text>
-        <Text style={styles.description}>
-          Masuk untuk melanjutkan perjalananmu bersama Curhat.in.
+        <Text style={styles.title}>
+          Selamat datang kembali!
         </Text>
 
-        <Text style={styles.label}>Username</Text>
-        <TextInput
-          placeholder="Masukkan username"
-          placeholderTextColor="#A6A0B3"
-          style={styles.input}
-        />
+        <Text style={styles.description}>
+          Masuk untuk melanjutkan perjalanan ceritamu.
+        </Text>
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="Masukkan password"
-          placeholderTextColor="#A6A0B3"
-          secureTextEntry
-          style={styles.input}
-        />
+        {error !== '' && (
+          <View style={styles.errorBox}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={18}
+              color="#B95050"
+            />
+
+            <Text style={styles.errorText}>
+              {error}
+            </Text>
+          </View>
+        )}
+
+        <Text style={styles.label}>
+          Username
+        </Text>
+
+        <View style={styles.inputContainer}>
+          <Ionicons
+            name="person-outline"
+            size={20}
+            color="#91899D"
+          />
+
+          <TextInput
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Masukkan username"
+            placeholderTextColor="#A6A0B3"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+            style={styles.input}
+          />
+        </View>
+
+        <Text style={styles.label}>
+          Password
+        </Text>
+
+        <View style={styles.inputContainer}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color="#91899D"
+          />
+
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Masukkan password"
+            placeholderTextColor="#A6A0B3"
+            secureTextEntry={!showPassword}
+            editable={!loading}
+            style={styles.input}
+          />
+
+          <Pressable
+            onPress={() => setShowPassword(!showPassword)}
+            disabled={loading}
+            hitSlop={10}
+          >
+            <Ionicons
+              name={
+                showPassword
+                  ? 'eye-off-outline'
+                  : 'eye-outline'
+              }
+              size={21}
+              color="#91899D"
+            />
+          </Pressable>
+        </View>
 
         <Pressable
-          style={styles.primaryButton}
-          onPress={() => router.push('/home')}
+          style={[
+            styles.primaryButton,
+            loading && styles.disabledButton,
+          ]}
+          onPress={handleLogin}
+          disabled={loading}
         >
-          <Text style={styles.primaryButtonText}>Masuk</Text>
+          {loading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.primaryButtonText}>
+                Memproses...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.primaryButtonText}>
+              Masuk
+            </Text>
+          )}
         </Pressable>
 
         <View style={styles.registerRow}>
-          <Text style={styles.registerText}>Belum punya akun?</Text>
+          <Text style={styles.registerText}>
+            Belum punya akun?
+          </Text>
 
-          <Pressable onPress={() => router.push('/register')}>
-            <Text style={styles.registerLink}> Daftar</Text>
+          <Pressable
+            onPress={() => router.push('/register')}
+            disabled={loading}
+          >
+            <Text style={styles.registerLink}>
+              {' '}Daftar
+            </Text>
           </Pressable>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#F8F5FC',
     paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 32,
     justifyContent: 'center',
   },
 
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
 
   logo: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#8067B7',
-    marginBottom: 8,
+    width: 145,
+    height: 145,
+    marginBottom: -4,
   },
 
   subtitle: {
@@ -82,7 +242,7 @@ const styles = StyleSheet.create({
     color: '#756F80',
     textAlign: 'center',
     lineHeight: 20,
-    maxWidth: 300,
+    maxWidth: 290,
   },
 
   card: {
@@ -100,7 +260,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '700',
     color: '#3F384A',
     marginBottom: 6,
@@ -110,7 +270,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8A8493',
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 22,
+  },
+
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F0',
+    borderWidth: 1,
+    borderColor: '#F3CACA',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 18,
+    gap: 8,
+  },
+
+  errorText: {
+    flex: 1,
+    color: '#B95050',
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   label: {
@@ -120,16 +299,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  input: {
+  inputContainer: {
     height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E6DDF1',
     backgroundColor: '#FBF9FD',
     borderRadius: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    marginBottom: 18,
+    gap: 10,
+  },
+
+  input: {
+    flex: 1,
     fontSize: 15,
     color: '#3F384A',
-    marginBottom: 18,
+    paddingVertical: 0,
   },
 
   primaryButton: {
@@ -139,6 +326,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
+  },
+
+  disabledButton: {
+    opacity: 0.7,
+  },
+
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 
   primaryButtonText: {

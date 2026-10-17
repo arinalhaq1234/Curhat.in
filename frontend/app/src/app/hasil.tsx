@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import {
   Pressable,
@@ -8,104 +9,206 @@ import {
 } from 'react-native';
 
 export default function HasilScreen() {
+  // Sementara masih dummy.
+  // Nanti nilai ini bisa langsung diganti dari hasil API backend.
+  const emotion = 'Sedih';
+
+  const getEmotionEmoji = (value: string) => {
+    const emotionValue = value.toLowerCase();
+
+    if (emotionValue.includes('senang')) return '😄';
+    if (emotionValue.includes('bahagia')) return '😊';
+    if (emotionValue.includes('sedih')) return '😢';
+    if (emotionValue.includes('cemas')) return '😟';
+    if (emotionValue.includes('khawatir')) return '😟';
+    if (emotionValue.includes('marah')) return '😠';
+    if (emotionValue.includes('kesal')) return '😤';
+    if (emotionValue.includes('tertekan')) return '😣';
+    if (emotionValue.includes('stres')) return '😫';
+    if (emotionValue.includes('takut')) return '😨';
+    if (emotionValue.includes('kecewa')) return '😞';
+    if (emotionValue.includes('bingung')) return '😕';
+    if (emotionValue.includes('lelah')) return '😮‍💨';
+    if (emotionValue.includes('tenang')) return '😌';
+    if (emotionValue.includes('malu')) return '😳';
+    if (emotionValue.includes('kesepian')) return '😔';
+    if (emotionValue.includes('semangat')) return '🤩';
+    if (emotionValue.includes('terkejut')) return '😮';
+    if (emotionValue.includes('bosan')) return '🥱';
+
+    return '😐';
+  };
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+      {/* HEADER */}
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backText}>‹</Text>
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color="#8067B7"
+          />
         </Pressable>
 
-        <View>
-          <Text style={styles.title}>Hasil Analisis</Text>
+        <View style={styles.headerTitleWrapper}>
+          <Text style={styles.title}>
+            Hasil Analisis
+          </Text>
+
           <Text style={styles.subtitle}>
-            Ini adalah gambaran dari cerita yang kamu bagikan.
+            Gambaran dari cerita yang kamu bagikan.
           </Text>
         </View>
       </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Emosi utama</Text>
-        <Text style={styles.summaryValue}>Sedih</Text>
-        <Text style={styles.summaryText}>
-          Kamu tampaknya sedang mengalami perasaan sedih dan cukup terbebani.
-        </Text>
+      {/* EMOSI UTAMA */}
+      <View style={styles.emotionCard}>
+        <View style={styles.emotionHeader}>
+          <Text style={styles.emotionLabel}>
+            Emosi Utama
+          </Text>
+
+        </View>
+
+        <View style={styles.emotionContent}>
+          <View style={styles.emojiCircle}>
+            <Text style={styles.emotionEmoji}>
+              {getEmotionEmoji(emotion)}
+            </Text>
+          </View>
+
+          <View style={styles.emotionTextWrapper}>
+            <Text style={styles.emotionTitle}>
+              {emotion}
+            </Text>
+
+            <Text style={styles.summaryText}>
+              Kamu tampaknya sedang mengalami perasaan sedih dan cukup
+              terbebani.
+            </Text>
+          </View>
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Ringkasan</Text>
-
+      {/* RINGKASAN */}
       <View style={styles.card}>
-        <Text style={styles.cardIcon}>📝</Text>
+        <View style={styles.cardIconBlue}>
+          <Ionicons
+            name="document-text-outline"
+            size={21}
+            color="#6675CD"
+          />
+        </View>
 
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Cerita kamu</Text>
+          <Text style={styles.cardTitle}>
+            Ringkasan Cerita
+          </Text>
+
           <Text style={styles.cardText}>
-            Ringkasan dari curhat yang kamu sampaikan akan tampil pada bagian ini.
+            Ringkasan dari curhat yang kamu sampaikan akan tampil pada
+            bagian ini.
           </Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Respons untukmu</Text>
-
+      {/* RESPONS EMPATIK */}
       <View style={styles.card}>
-        <Text style={styles.cardIcon}>💜</Text>
+        <View style={styles.cardIconPurple}>
+          <Ionicons
+            name="heart-outline"
+            size={22}
+            color="#8D72C3"
+          />
+        </View>
 
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Pesan empatik</Text>
+          <Text style={styles.cardTitle}>
+            Respons Empatik
+          </Text>
+
           <Text style={styles.cardText}>
-            Wajar jika kamu merasa lelah. Kamu sudah melakukan hal yang baik
-            dengan menceritakan apa yang sedang kamu rasakan.
+            Wajar jika kamu merasa lelah. Kamu sudah melakukan hal yang
+            baik dengan menceritakan apa yang sedang kamu rasakan.
+            Kamu tidak harus menghadapi semuanya sendiri.
           </Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Rekomendasi</Text>
-
+      {/* REKOMENDASI */}
       <View style={styles.recommendationCard}>
+        <View style={styles.recommendationHeader}>
+          <View style={styles.cardIconYellow}>
+            <Ionicons
+              name="bulb-outline"
+              size={22}
+              color="#D79A3A"
+            />
+          </View>
+
+          <Text style={styles.recommendationTitle}>
+            Rekomendasi
+          </Text>
+        </View>
+
         <View style={styles.recommendationItem}>
-          <Text style={styles.number}>1</Text>
+          <View style={styles.numberCircle}>
+            <Text style={styles.number}>1</Text>
+          </View>
+
           <Text style={styles.recommendationText}>
             Beri dirimu waktu untuk beristirahat sejenak.
           </Text>
         </View>
 
         <View style={styles.recommendationItem}>
-          <Text style={styles.number}>2</Text>
+          <View style={styles.numberCircle}>
+            <Text style={styles.number}>2</Text>
+          </View>
+
           <Text style={styles.recommendationText}>
             Ceritakan perasaanmu kepada orang yang kamu percaya.
           </Text>
         </View>
 
         <View style={styles.recommendationItem}>
-          <Text style={styles.number}>3</Text>
+          <View style={styles.numberCircle}>
+            <Text style={styles.number}>3</Text>
+          </View>
+
           <Text style={styles.recommendationText}>
             Lakukan aktivitas sederhana yang membuatmu merasa lebih tenang.
           </Text>
         </View>
       </View>
 
-      <Pressable
-        style={styles.primaryButton}
-        onPress={() => router.replace('/home')}
-      >
-        <Text style={styles.primaryButtonText}>
-          Kembali ke Home
-        </Text>
-      </Pressable>
+      {/* BUTTON */}
+      <View style={styles.buttonRow}>
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => router.replace('/home')}
+        >
+          <Text style={styles.secondaryButtonText}>
+            Kembali ke Home
+          </Text>
+        </Pressable>
 
-      <Pressable
-        style={styles.secondaryButton}
-        onPress={() => router.push('/riwayat')}
-      >
-        <Text style={styles.secondaryButtonText}>
-          Lihat Riwayat
-        </Text>
-      </Pressable>
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => router.push('/riwayat')}
+        >
+          <Text style={styles.primaryButtonText}>
+            Lihat Riwayat
+          </Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -114,16 +217,15 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#F8F5FC',
-    paddingHorizontal: 24,
-    paddingTop: 56,
+    paddingHorizontal: 22,
+    paddingTop: 54,
     paddingBottom: 32,
   },
 
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    marginBottom: 28,
+    alignItems: 'center',
+    marginBottom: 24,
   },
 
   backButton: {
@@ -133,60 +235,85 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 14,
     elevation: 2,
   },
 
-  backText: {
-    fontSize: 30,
-    color: '#8067B7',
-    marginTop: -2,
+  headerTitleWrapper: {
+    flex: 1,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '700',
     color: '#3F384A',
-    marginBottom: 5,
+    marginBottom: 3,
   },
 
   subtitle: {
-    fontSize: 14,
-    color: '#8A8493',
-    lineHeight: 20,
-    maxWidth: 270,
-  },
-
-  summaryCard: {
-    backgroundColor: '#EDE5F7',
-    borderRadius: 24,
-    padding: 22,
-    marginBottom: 28,
-  },
-
-  summaryLabel: {
     fontSize: 13,
-    color: '#7F718F',
-    marginBottom: 6,
+    color: '#8A8493',
+    lineHeight: 18,
   },
 
-  summaryValue: {
-    fontSize: 26,
+  emotionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+  },
+
+  emotionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  emotionLabel: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#5A466F',
-    marginBottom: 8,
+    color: '#4A4352',
+  },
+
+  emotionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  emojiCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#FFF0CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 15,
+  },
+
+  emotionEmoji: {
+    fontSize: 36,
+  },
+
+  emotionTextWrapper: {
+    flex: 1,
+  },
+
+  emotionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4A4352',
+    marginBottom: 5,
   },
 
   summaryText: {
-    fontSize: 14,
-    color: '#756A81',
-    lineHeight: 21,
-  },
-
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#3F384A',
-    marginBottom: 12,
+    fontSize: 13,
+    color: '#817A89',
+    lineHeight: 19,
   },
 
   card: {
@@ -194,20 +321,31 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 18,
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 14,
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
   },
 
-  cardIcon: {
-    fontSize: 24,
-    marginRight: 14,
+  cardIconBlue: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#E9EEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+  },
+
+  cardIconPurple: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#EEE6FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
   },
 
   cardContent: {
@@ -222,61 +360,97 @@ const styles = StyleSheet.create({
   },
 
   cardText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#817A89',
-    lineHeight: 21,
+    lineHeight: 20,
   },
 
   recommendationCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 18,
-    marginBottom: 28,
+    marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+  },
+
+  recommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  cardIconYellow: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFF1D4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  recommendationTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#4A4352',
   },
 
   recommendationItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+
+  numberCircle: {
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    backgroundColor: '#EEE6FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
   },
 
   number: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EDE5F7',
     color: '#8067B7',
-    textAlign: 'center',
-    lineHeight: 28,
     fontWeight: '700',
-    marginRight: 12,
+    fontSize: 12,
   },
 
   recommendationText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: '#6F6878',
-    lineHeight: 20,
+    lineHeight: 19,
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
 
   primaryButton: {
-    height: 54,
+    flex: 1,
+    height: 52,
     backgroundColor: '#8D72C3',
-    borderRadius: 17,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
 
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
 
   secondaryButton: {
+    flex: 1,
     height: 52,
-    borderRadius: 17,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#D8CDE7',
     justifyContent: 'center',
@@ -286,7 +460,7 @@ const styles = StyleSheet.create({
 
   secondaryButtonText: {
     color: '#8067B7',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
 });
