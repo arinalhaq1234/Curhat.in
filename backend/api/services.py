@@ -23,6 +23,21 @@ MODEL_NAME = "gemini-3.6-flash"
 
 
 # =========================================================
+# KONSTANTA HASIL ANALISIS
+# =========================================================
+
+KATEGORI_EMOSI = {
+    "cemas": "Cemas",
+    "sedih": "Sedih",
+    "takut": "Takut",
+    "marah": "Marah",
+    "tertekan": "Tertekan",
+    "kesepian": "Kesepian",
+    "netral": "Netral",
+}
+
+
+# =========================================================
 # FUNGSI REQUEST GEMINI + RETRY
 # =========================================================
 
@@ -96,21 +111,109 @@ def parse_json_response(text):
     Mengubah output Gemini menjadi dictionary Python.
     """
 
+    if not text or not isinstance(text, str):
+        raise ValueError(
+            "Gemini tidak memberikan respons yang dapat diproses."
+        )
+
     text = text.strip()
 
-    # Jika Gemini masih memberi markdown ```json
+    # Membersihkan markdown ```json ... ```
     if text.startswith("```"):
-        text = text.replace("```json", "")
-        text = text.replace("```", "")
-        text = text.strip()
+        baris = text.splitlines()
+
+        if baris and baris[0].strip().startswith("```"):
+            baris = baris[1:]
+
+        if baris and baris[-1].strip() == "```":
+            baris = baris[:-1]
+
+        text = "\n".join(baris).strip()
 
     try:
-        return json.loads(text)
+        hasil = json.loads(text)
 
     except json.JSONDecodeError:
         raise ValueError(
             "Output Gemini tidak memiliki format JSON yang valid."
         )
+
+    if not isinstance(hasil, dict):
+        raise ValueError(
+            "Output Gemini harus berupa objek JSON."
+        )
+
+    return hasil
+
+
+# =========================================================
+# VALIDASI HASIL ANALISIS AI
+# =========================================================
+
+def validasi_hasil_analisis(hasil, dari_audio=False):
+    """
+    Memastikan keluaran Gemini sesuai kontrak data Curhat.in.
+    """
+
+    if not isinstance(hasil, dict):
+        raise ValueError(
+            "Hasil analisis AI tidak memiliki struktur yang valid."
+        )
+
+    # Khusus audio: Gemini dapat menolak file yang bukan curhatan
+    if dari_audio:
+        valid = hasil.get("valid")
+
+        if valid is False:
+            pesan = hasil.get(
+                "pesan",
+                "File yang diberikan bukan rekaman curhatan."
+            )
+
+            return {
+                "valid": False,
+                "pesan": str(pesan).strip(),
+            }
+
+        if valid is not True:
+            raise ValueError(
+                "Status validasi audio dari Gemini tidak ditemukan."
+            )
+
+    field_wajib = [
+        "emosi",
+        "ringkasan_cerita",
+        "akar_masalah",
+        "rekomendasi",
+    ]
+
+    for field in field_wajib:
+        nilai = hasil.get(field)
+
+        if not isinstance(nilai, str) or not nilai.strip():
+            raise ValueError(
+                f"Field '{field}' pada hasil AI tidak valid atau kosong."
+            )
+
+    emosi = hasil["emosi"].strip().lower()
+
+    if emosi not in KATEGORI_EMOSI:
+        raise ValueError(
+            "Kategori emosi dari AI tidak sesuai dengan kategori "
+            "yang diperbolehkan."
+        )
+
+    hasil_valid = {
+        "emosi": KATEGORI_EMOSI[emosi],
+        "ringkasan_cerita": hasil["ringkasan_cerita"].strip(),
+        "akar_masalah": hasil["akar_masalah"].strip(),
+        "rekomendasi": hasil["rekomendasi"].strip(),
+    }
+
+    if dari_audio:
+        hasil_valid["valid"] = True
+
+    return hasil_valid
 
 
 # =========================================================
@@ -133,9 +236,11 @@ ATURAN:
 - Jangan mengaku sebagai psikolog, dokter, atau tenaga kesehatan.
 - Jangan memberikan diagnosis klinis.
 - Analisis hanya berdasarkan cerita pengguna.
+- Jangan mengarang informasi yang tidak disampaikan pengguna.
 - Tetap pahami bahasa Indonesia tidak baku, bahasa gaul,
   singkatan, maupun typo.
-- Berikan respons empatik dan tidak menghakimi.
+- Gunakan bahasa Indonesia yang natural, empatik,
+  suportif, dan tidak menghakimi.
 
 Kategori emosi yang diperbolehkan:
 - Cemas
@@ -146,18 +251,34 @@ Kategori emosi yang diperbolehkan:
 - Kesepian
 - Netral
 
+KETENTUAN HASIL:
+- "emosi" berisi satu kategori emosi utama.
+- "ringkasan_cerita" merangkum inti cerita pengguna
+  secara singkat tanpa menambahkan informasi baru.
+- "akar_masalah" menjelaskan masalah atau faktor utama
+  yang terlihat dari cerita pengguna.
+- "rekomendasi" diawali dengan respons yang empatik,
+  kemudian berikan saran awal yang relevan, realistis,
+  aman, dan sesuai dengan konteks cerita.
+
 Kembalikan HANYA JSON valid dengan format:
 
 {{
     "emosi": "kategori emosi utama",
-    "akar_masalah": "ringkasan penyebab atau masalah utama berdasarkan cerita pengguna",
-    "rekomendasi": "rekomendasi awal yang empatik dan suportif"
+    "ringkasan_cerita": "ringkasan singkat isi cerita pengguna",
+    "akar_masalah": "masalah atau faktor utama berdasarkan cerita pengguna",
+    "rekomendasi": "respons empatik dan rekomendasi yang relevan"
 }}
 """
 
     response = generate_with_retry(prompt)
 
-    return parse_json_response(response.text)
+    hasil = parse_json_response(response.text)
+
+    return validasi_hasil_analisis(
+        hasil,
+        dari_audio=False
+    )
 
 
 # =========================================================
@@ -181,9 +302,11 @@ Anda adalah AI pendamping emosional pada platform Curhat.in.
 Dengarkan dan pahami audio pengguna.
 
 LANGKAH 1:
-Periksa apakah audio berisi manusia yang sedang berbicara/curhat.
+Periksa apakah audio berisi manusia yang sedang berbicara
+atau menyampaikan sebuah cerita/curhatan.
 
-Jika file hanya berisi lagu, musik, instrumen, atau nyanyian,
+Jika file hanya berisi lagu, musik, instrumen, suara tanpa
+percakapan yang dapat dipahami, atau bukan rekaman curhatan,
 kembalikan HANYA JSON:
 
 {
@@ -198,9 +321,11 @@ ATURAN:
 - Jangan mengaku sebagai psikolog, dokter, atau tenaga kesehatan.
 - Jangan memberikan diagnosis klinis.
 - Analisis hanya berdasarkan informasi dalam audio.
-- Gunakan bahasa yang empatik dan tidak menghakimi.
+- Jangan mengarang informasi yang tidak terdapat dalam audio.
+- Gunakan bahasa Indonesia yang natural, empatik,
+  suportif, dan tidak menghakimi.
 
-Kategori emosi:
+Kategori emosi yang diperbolehkan:
 - Cemas
 - Sedih
 - Takut
@@ -209,13 +334,24 @@ Kategori emosi:
 - Kesepian
 - Netral
 
+KETENTUAN HASIL:
+- "emosi" berisi satu kategori emosi utama.
+- "ringkasan_cerita" merangkum inti cerita pengguna
+  secara singkat tanpa menambahkan informasi baru.
+- "akar_masalah" menjelaskan masalah atau faktor utama
+  yang terlihat dari isi audio.
+- "rekomendasi" diawali dengan respons yang empatik,
+  kemudian berikan saran awal yang relevan, realistis,
+  aman, dan sesuai dengan konteks cerita.
+
 Kembalikan HANYA JSON valid:
 
 {
     "valid": true,
     "emosi": "kategori emosi utama",
-    "akar_masalah": "ringkasan masalah utama berdasarkan isi audio",
-    "rekomendasi": "rekomendasi awal yang empatik dan suportif"
+    "ringkasan_cerita": "ringkasan singkat isi cerita pengguna",
+    "akar_masalah": "masalah atau faktor utama berdasarkan isi audio",
+    "rekomendasi": "respons empatik dan rekomendasi yang relevan"
 }
 """
 
@@ -226,4 +362,9 @@ Kembalikan HANYA JSON valid:
         ]
     )
 
-    return parse_json_response(response.text)
+    hasil = parse_json_response(response.text)
+
+    return validasi_hasil_analisis(
+        hasil,
+        dari_audio=True
+    )

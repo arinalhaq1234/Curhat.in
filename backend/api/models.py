@@ -37,6 +37,12 @@ class RiwayatCurhat(models.Model):
         null=True
     )
 
+    ringkasan_cerita = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Ringkasan singkat isi curhatan pengguna"
+    )
+
     akar_masalah = models.TextField(
         blank=True,
         null=True

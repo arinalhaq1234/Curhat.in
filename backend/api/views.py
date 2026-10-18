@@ -1,4 +1,9 @@
+import logging
+import math
+from io import BytesIO
+
 from django.contrib.auth import authenticate
+from django.db import DatabaseError
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -6,9 +11,125 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from mutagen import MutagenError
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.wave import WAVE
+
 from .models import RiwayatCurhat
 from .serializers import RegisterSerializer, RiwayatCurhatSerializer
 from .services import analisis_audio, analisis_teks
+
+
+logger = logging.getLogger(__name__)
+
+# Batas upload sesuai kesepakatan BE-002.
+MAX_AUDIO_SIZE = 15_000_000      # 15 MB (desimal)
+MAX_AUDIO_DURATION = 10 * 60       # 10 menit (detik)
+
+# MIME type dari upload digunakan untuk memilih pemeriksa format nyata.
+AUDIO_PARSERS = {
+    "audio/mpeg": MP3,
+    "audio/mp3": MP3,
+    "audio/wav": WAVE,
+    "audio/x-wav": WAVE,
+    "audio/mp4": MP4,
+    "audio/m4a": MP4,
+    "audio/x-m4a": MP4,
+}
+
+
+def baca_durasi_audio(audio_bytes, mime_type):
+    """Baca durasi audio sesungguhnya, bukan berdasarkan nama file."""
+    try:
+        audio = AUDIO_PARSERS[mime_type](BytesIO(audio_bytes))
+        durasi = float(audio.info.length)
+    except (MutagenError, OSError, ValueError, AttributeError, TypeError, EOFError) as error:
+        raise ValueError("File audio rusak atau tidak dapat dibaca.") from error
+
+    if not math.isfinite(durasi) or durasi <= 0:
+        raise ValueError("Durasi audio tidak valid.")
+
+    return durasi
+
+
+# =========================================================
+# PENANGANAN ERROR CURHAT (BE-004)
+# =========================================================
+
+def tangani_error_curhat(error, jenis):
+    """Catat detail teknis di server, kirim pesan aman ke pengguna."""
+    logger.exception("Gagal memproses curhat %s", jenis)
+
+    if isinstance(error, DatabaseError):
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Hasil analisis belum dapat disimpan. "
+                    "Silakan coba kembali beberapa saat lagi."
+                )
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    if isinstance(error, ValueError):
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Hasil analisis AI tidak valid. "
+                    "Silakan coba kembali."
+                )
+            },
+            status=status.HTTP_502_BAD_GATEWAY
+        )
+
+    pesan_error = str(error).lower()
+
+    if any(kata in pesan_error for kata in [
+        "429",
+        "resource_exhausted",
+        "rate limit",
+        "batas penggunaan gemini",
+    ]):
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Batas penggunaan Gemini sedang tercapai. "
+                    "Silakan coba kembali beberapa saat lagi."
+                )
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    if (
+        isinstance(error, RuntimeError)
+        or "503" in pesan_error
+        or "unavailable" in pesan_error
+    ):
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Layanan AI sedang mengalami gangguan. "
+                    "Silakan coba kembali."
+                )
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    return Response(
+        {
+            "success": False,
+            "message": (
+                "Terjadi kesalahan pada server. "
+                "Silakan coba kembali."
+            )
+        },
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+    )
 
 
 # =========================================================
@@ -53,6 +174,7 @@ def curhat_text(request):
             user=request.user,
             teks=teks_curhat,
             emosi=hasil_ai.get("emosi"),
+            ringkasan_cerita=hasil_ai.get("ringkasan_cerita"),
             akar_masalah=hasil_ai.get("akar_masalah"),
             rekomendasi=hasil_ai.get("rekomendasi"),
         )
@@ -69,26 +191,7 @@ def curhat_text(request):
         )
 
     except Exception as e:
-        error_message = str(e)
-
-        if "429" in error_message or "rate limit" in error_message.lower():
-            return Response(
-                {
-                    "success": False,
-                    "message": "Batas penggunaan Gemini sedang tercapai.",
-                    "error": "Silakan coba kembali beberapa saat lagi."
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        return Response(
-            {
-                "success": False,
-                "message": "Curhatan gagal diproses.",
-                "error": error_message
-            },
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+        return tangani_error_curhat(e, "teks")
 
 
 # =========================================================
@@ -109,33 +212,60 @@ def curhat_audio(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    allowed_types = [
-        "audio/mpeg",
-        "audio/mp3",
-        "audio/wav",
-        "audio/x-wav",
-        "audio/mp4",
-        "audio/m4a",
-        "audio/x-m4a",
-    ]
-
-    if file_audio.content_type not in allowed_types:
+    if file_audio.content_type not in AUDIO_PARSERS:
         return Response(
             {
                 "success": False,
                 "message": "Format file audio tidak didukung.",
-                "format_diterima": [
-                    "MP3",
-                    "WAV",
-                    "M4A"
-                ]
+                "format_diterima": ["MP3", "WAV", "M4A"],
             },
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Cek ukuran sebelum membaca isi audio dan sebelum mengirim ke Gemini.
+    if file_audio.size == 0:
+        return Response(
+            {
+                "success": False,
+                "message": "File audio tidak boleh kosong.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if file_audio.size > MAX_AUDIO_SIZE:
+        return Response(
+            {
+                "success": False,
+                "message": "Ukuran audio maksimal 15 MB.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Baca isi sekali, lalu validasi format asli dan durasinya.
+    audio_bytes = file_audio.read()
+    try:
+        durasi_audio = baca_durasi_audio(
+            audio_bytes, file_audio.content_type
+        )
+    except ValueError:
+        return Response(
+            {
+                "success": False,
+                "message": "File audio rusak atau tidak dapat dibaca.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if durasi_audio > MAX_AUDIO_DURATION:
+        return Response(
+            {
+                "success": False,
+                "message": "Durasi audio maksimal 10 menit.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
-        audio_bytes = file_audio.read()
-
         hasil_ai = analisis_audio(
             audio_bytes=audio_bytes,
             mime_type=file_audio.content_type
@@ -159,6 +289,7 @@ def curhat_audio(request):
             audio_file=audio_bytes,
             audio_name=file_audio.name,
             emosi=hasil_ai.get("emosi"),
+            ringkasan_cerita=hasil_ai.get("ringkasan_cerita"),
             akar_masalah=hasil_ai.get("akar_masalah"),
             rekomendasi=hasil_ai.get("rekomendasi"),
         )
@@ -175,26 +306,7 @@ def curhat_audio(request):
         )
 
     except Exception as e:
-        error_message = str(e)
-
-        if "429" in error_message or "rate limit" in error_message.lower():
-            return Response(
-                {
-                    "success": False,
-                    "message": "Batas penggunaan Gemini sedang tercapai.",
-                    "error": "Silakan coba kembali beberapa saat lagi."
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        return Response(
-            {
-                "success": False,
-                "message": "Audio gagal diproses.",
-                "error": error_message
-            },
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+        return tangani_error_curhat(e, "audio")
 
 
 # =========================================================
