@@ -86,13 +86,16 @@ export default function ProfileScreen() {
   }, []);
 
   const handleLogout = async () => {
+    if (logoutLoading) return;
+
     try {
       setLogoutLoading(true);
 
+      const accessToken = await getAccessToken();
       const refreshToken = await getRefreshToken();
 
-      if (refreshToken) {
-        await logoutUser(refreshToken);
+      if (accessToken && refreshToken) {
+        await logoutUser(refreshToken, accessToken);
       }
     } catch (error) {
       console.log('Logout backend gagal:', error);

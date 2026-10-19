@@ -1,5 +1,9 @@
+
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import {
+  router,
+  useLocalSearchParams,
+} from 'expo-router';
 import {
   Pressable,
   ScrollView,
@@ -9,9 +13,23 @@ import {
 } from 'react-native';
 
 export default function HasilScreen() {
-  // Sementara masih dummy.
-  // Nanti nilai ini bisa langsung diganti dari hasil API backend.
-  const emotion = 'Sedih';
+  const params = useLocalSearchParams();
+
+  const emotion = String(params.emosi ?? '');
+
+  const ringkasanCerita = String(
+    params.ringkasan_cerita ?? ''
+  );
+
+  const akarMasalah = String(
+    params.akar_masalah ?? ''
+  );
+
+  const rekomendasi = String(
+    params.rekomendasi ?? ''
+  );
+
+  const waktu = String(params.waktu ?? '');
 
   const getEmotionEmoji = (value: string) => {
     const emotionValue = value.toLowerCase();
@@ -61,10 +79,7 @@ export default function HasilScreen() {
           <Text style={styles.title}>
             Hasil Analisis
           </Text>
-
-          <Text style={styles.subtitle}>
-            Gambaran dari cerita yang kamu bagikan.
-          </Text>
+          
         </View>
       </View>
 
@@ -75,6 +90,14 @@ export default function HasilScreen() {
             Emosi Utama
           </Text>
 
+          {waktu ? (
+            <Text
+              style={styles.emotionTime}
+              numberOfLines={1}
+            >
+              {waktu}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.emotionContent}>
@@ -86,18 +109,18 @@ export default function HasilScreen() {
 
           <View style={styles.emotionTextWrapper}>
             <Text style={styles.emotionTitle}>
-              {emotion}
+              {emotion || 'Tidak diketahui'}
             </Text>
 
             <Text style={styles.summaryText}>
-              Kamu tampaknya sedang mengalami perasaan sedih dan cukup
-              terbebani.
+              Hasil analisis emosi berdasarkan cerita
+              yang kamu sampaikan.
             </Text>
           </View>
         </View>
       </View>
 
-      {/* RINGKASAN */}
+      {/* RINGKASAN CERITA */}
       <View style={styles.card}>
         <View style={styles.cardIconBlue}>
           <Ionicons
@@ -113,17 +136,17 @@ export default function HasilScreen() {
           </Text>
 
           <Text style={styles.cardText}>
-            Ringkasan dari curhat yang kamu sampaikan akan tampil pada
-            bagian ini.
+            {ringkasanCerita ||
+              'Ringkasan cerita belum tersedia.'}
           </Text>
         </View>
       </View>
 
-      {/* RESPONS EMPATIK */}
+      {/* AKAR MASALAH */}
       <View style={styles.card}>
         <View style={styles.cardIconPurple}>
           <Ionicons
-            name="heart-outline"
+            name="search-outline"
             size={22}
             color="#8D72C3"
           />
@@ -131,13 +154,12 @@ export default function HasilScreen() {
 
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>
-            Respons Empatik
+            Akar Masalah
           </Text>
 
           <Text style={styles.cardText}>
-            Wajar jika kamu merasa lelah. Kamu sudah melakukan hal yang
-            baik dengan menceritakan apa yang sedang kamu rasakan.
-            Kamu tidak harus menghadapi semuanya sendiri.
+            {akarMasalah ||
+              'Akar masalah belum tersedia.'}
           </Text>
         </View>
       </View>
@@ -158,42 +180,19 @@ export default function HasilScreen() {
           </Text>
         </View>
 
-        <View style={styles.recommendationItem}>
-          <View style={styles.numberCircle}>
-            <Text style={styles.number}>1</Text>
-          </View>
-
-          <Text style={styles.recommendationText}>
-            Beri dirimu waktu untuk beristirahat sejenak.
-          </Text>
-        </View>
-
-        <View style={styles.recommendationItem}>
-          <View style={styles.numberCircle}>
-            <Text style={styles.number}>2</Text>
-          </View>
-
-          <Text style={styles.recommendationText}>
-            Ceritakan perasaanmu kepada orang yang kamu percaya.
-          </Text>
-        </View>
-
-        <View style={styles.recommendationItem}>
-          <View style={styles.numberCircle}>
-            <Text style={styles.number}>3</Text>
-          </View>
-
-          <Text style={styles.recommendationText}>
-            Lakukan aktivitas sederhana yang membuatmu merasa lebih tenang.
-          </Text>
-        </View>
+        <Text style={styles.recommendationText}>
+          {rekomendasi ||
+            'Rekomendasi belum tersedia.'}
+        </Text>
       </View>
 
       {/* BUTTON */}
       <View style={styles.buttonRow}>
         <Pressable
           style={styles.secondaryButton}
-          onPress={() => router.replace('/home')}
+          onPress={() =>
+            router.replace('/home')
+          }
         >
           <Text style={styles.secondaryButtonText}>
             Kembali ke Home
@@ -202,7 +201,9 @@ export default function HasilScreen() {
 
         <Pressable
           style={styles.primaryButton}
-          onPress={() => router.push('/riwayat')}
+          onPress={() =>
+            router.push('/riwayat')
+          }
         >
           <Text style={styles.primaryButtonText}>
             Lihat Riwayat
@@ -272,12 +273,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    gap: 8,
   },
 
   emotionLabel: {
     fontSize: 14,
     fontWeight: '700',
     color: '#4A4352',
+  },
+
+  emotionTime: {
+    fontSize: 10,
+    color: '#AAA2B2',
+    flexShrink: 1,
+    textAlign: 'right',
   },
 
   emotionContent: {
@@ -365,6 +374,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
+  timeText: {
+    fontSize: 11,
+    color: '#AAA2B2',
+    marginTop: 10,
+  },
+
   recommendationCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -379,7 +394,7 @@ const styles = StyleSheet.create({
   recommendationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
 
   cardIconYellow: {
@@ -398,33 +413,10 @@ const styles = StyleSheet.create({
     color: '#4A4352',
   },
 
-  recommendationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-
-  numberCircle: {
-    width: 27,
-    height: 27,
-    borderRadius: 14,
-    backgroundColor: '#EEE6FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 11,
-  },
-
-  number: {
-    color: '#8067B7',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-
   recommendationText: {
-    flex: 1,
     fontSize: 13,
     color: '#6F6878',
-    lineHeight: 19,
+    lineHeight: 20,
   },
 
   buttonRow: {

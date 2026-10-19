@@ -1,3 +1,4 @@
+
 import { API_URL } from "@/constants/api";
 
 export class ApiError extends Error {
@@ -92,11 +93,33 @@ export async function getProfile(accessToken: string) {
   });
 }
 
-export async function logoutUser(refreshToken: string) {
+// LOGOUT - Mengirim refresh token dan Bearer access token
+export async function logoutUser(
+  refreshToken: string,
+  accessToken: string
+) {
   return apiRequest("/api/auth/logout/", {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
     body: JSON.stringify({
       refresh: refreshToken,
+    }),
+  });
+}
+
+export async function sendTextCurhat(
+  teks: string,
+  accessToken: string
+) {
+  return apiRequest('/api/curhat/text/', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      teks,
     }),
   });
 }

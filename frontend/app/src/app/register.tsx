@@ -1,3 +1,4 @@
+
 import { registerUser } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -24,10 +25,12 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (value: string) => {
-    return /\S+@\S+\.\S+/.test(value);
+    return /^\S+@\S+\.\S+$/.test(value);
   };
 
   const handleRegister = async () => {
+    if (loading) return;
+
     setError('');
 
     if (!username.trim() || !email.trim() || !password.trim()) {
@@ -45,13 +48,27 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password minimal 8 karakter.');
+    const isPasswordValid =
+      password.length >= 8 &&
+      password.length <= 20 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password);
+
+    if (!isPasswordValid) {
+      setError(
+        'Password harus terdiri dari 8–20 karakter dan mengandung huruf besar, huruf kecil, angka, serta karakter khusus.'
+      );
       return;
     }
 
     try {
       setLoading(true);
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 150);
+      });
 
       await registerUser(
         username.trim(),
@@ -77,6 +94,7 @@ export default function RegisterScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
+      {/* HEADER */}
       <View style={styles.header}>
         <Image
           source={require('../../assets/images/curhatin-logo.png')}
@@ -89,6 +107,7 @@ export default function RegisterScreen() {
         </Text>
       </View>
 
+      {/* CARD REGISTER */}
       <View style={styles.card}>
         <Text style={styles.title}>
           Buat Akun Baru
@@ -112,6 +131,7 @@ export default function RegisterScreen() {
           </View>
         )}
 
+        {/* USERNAME */}
         <Text style={styles.label}>
           Username
         </Text>
@@ -134,6 +154,7 @@ export default function RegisterScreen() {
           />
         </View>
 
+        {/* EMAIL */}
         <Text style={styles.label}>
           Email
         </Text>
@@ -157,6 +178,7 @@ export default function RegisterScreen() {
           />
         </View>
 
+        {/* PASSWORD */}
         <Text style={styles.label}>
           Password
         </Text>
@@ -175,6 +197,7 @@ export default function RegisterScreen() {
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showPassword}
             editable={!loading}
+            maxLength={20}
             style={styles.input}
           />
 
@@ -195,6 +218,13 @@ export default function RegisterScreen() {
           </Pressable>
         </View>
 
+        {/* KETENTUAN PASSWORD */}
+        <Text style={styles.passwordHint}>
+          Password 8–20 karakter, mengandung huruf besar,
+          huruf kecil, angka, dan karakter khusus.
+        </Text>
+
+        {/* BUTTON REGISTER */}
         <Pressable
           style={[
             styles.primaryButton,
@@ -221,6 +251,7 @@ export default function RegisterScreen() {
           )}
         </Pressable>
 
+        {/* LINK LOGIN */}
         <View style={styles.loginRow}>
           <Text style={styles.loginText}>
             Sudah punya akun?
@@ -341,6 +372,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#3F384A',
     paddingVertical: 0,
+  },
+
+  passwordHint: {
+    fontSize: 12,
+    color: '#8A8493',
+    lineHeight: 18,
+    marginTop: -8,
+    marginBottom: 12,
   },
 
   primaryButton: {

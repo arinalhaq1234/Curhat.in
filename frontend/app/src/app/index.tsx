@@ -1,36 +1,63 @@
-import { getAccessToken } from '@/services/session';
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { getProfile } from '@/services/api';
 import {
+  clearSession,
+  getAccessToken,
+} from '@/services/session';
+
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
 export default function Index() {
-  useEffect(() => {
-    const startApp = async () => {
-      try {
-        const accessToken = await getAccessToken();
+  const [error, setError] = useState('');
+  const [checking, setChecking] = useState(true);
 
-        setTimeout(() => {
-          if (accessToken) {
-            router.replace('/home');
-          } else {
-            router.replace('/login');
-          }
-        }, 1800);
-      } catch (error) {
-        console.log('Gagal memeriksa sesi awal:', error);
+  const startApp = async () => {
+    setChecking(true);
+    setError('');
 
-        setTimeout(() => {
-          router.replace('/login');
-        }, 1800);
+    try {
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        router.replace('/login');
+        return;
       }
-    };
 
-    startApp();
+      // Memeriksa apakah token masih berlaku.
+      await getProfile(accessToken);
+
+      router.replace('/home');
+    } catch (err: any) {
+      console.log('Gagal memeriksa sesi awal:', err);
+
+      if (err?.status === 401) {
+        await clearSession();
+        router.replace('/login');
+        return;
+      }
+
+      setError(
+        'Tidak dapat memeriksa sesi. Pastikan backend dan koneksi tersedia.'
+      );
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startApp();
+    }, 1800);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -45,6 +72,32 @@ export default function Index() {
         <Text style={styles.subtitle}>
           Tempat aman untuk bercerita dan didengarkan
         </Text>
+
+        {checking ? (
+          <ActivityIndicator
+            size="small"
+            color="#8D72C3"
+            style={styles.loader}
+          />
+        ) : null}
+
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>
+              {error}
+            </Text>
+
+            <Pressable
+              style={styles.retryButton}
+              onPress={startApp}
+              disabled={checking}
+            >
+              <Text style={styles.retryText}>
+                Coba Lagi
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.decorationLeft} />
@@ -66,6 +119,7 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
 
   logo: {
@@ -80,6 +134,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 260,
+  },
+
+  loader: {
+    marginTop: 24,
+  },
+
+  errorContainer: {
+    alignItems: 'center',
+    marginTop: 22,
+  },
+
+  errorText: {
+    fontSize: 13,
+    color: '#D95C5C',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+
+  retryButton: {
+    backgroundColor: '#8D72C3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+
+  retryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
 
   decorationLeft: {

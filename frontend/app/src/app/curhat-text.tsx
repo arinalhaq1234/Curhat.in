@@ -10,33 +10,126 @@ import {
   View,
 } from 'react-native';
 
+import { sendTextCurhat } from '@/services/api';
+import {
+  clearSession,
+  getAccessToken,
+} from '@/services/session';
+
+const MAX_LENGTH = 1000;
+
 export default function CurhatTextScreen() {
+  const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = () => {
-    setLoading(true);
+  const handleSubmit = async () => {
+    if (loading) {
+      return;
+    }
 
-    setTimeout(() => {
+    setError('');
+
+    if (!text.trim()) {
+      setError('Cerita tidak boleh kosong.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        await clearSession();
+        router.replace('/login');
+        return;
+      }
+
+      const response = await sendTextCurhat(
+        text.trim(),
+        accessToken
+      );
+
+      console.log(
+        'CURHAT TEXT RESPONSE:',
+        response
+      );
+
+      const result = response.data ?? response;
+
+      router.push({
+        pathname: '/hasil',
+        params: {
+          teks: String(result.teks ?? ''),
+          emosi: String(result.emosi ?? ''),
+          ringkasan_cerita: String(
+            result.ringkasan_cerita ?? ''
+          ),
+          akar_masalah: String(
+            result.akar_masalah ?? ''
+          ),
+          rekomendasi: String(
+            result.rekomendasi ?? ''
+          ),
+          waktu: String(result.waktu ?? ''),
+        },
+      });
+    } catch (error: any) {
+      console.log(
+        'CURHAT TEXT ERROR:',
+        error
+      );
+
+      if (error?.status === 401) {
+        await clearSession();
+        router.replace('/login');
+        return;
+      }
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : '';
+
+      const isConnectionError =
+        /fetch failed|network request failed|failed to fetch|network error|unexpected end of stream/i.test(
+          message
+        );
+
+      setError(
+        isConnectionError
+          ? 'Gagal terhubung ke server. Periksa koneksi dan coba lagi.'
+          : message || 'Gagal mengirim cerita. Silakan coba lagi.'
+      );
+
+      // Teks sengaja tetap disimpan
+      // agar pengguna dapat mencoba mengirim lagi.
+    } finally {
       setLoading(false);
-      router.push('/hasil');
-    }, 1500);
+    }
   };
 
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
+          disabled={loading}
         >
           <Text style={styles.backText}>‹</Text>
         </Pressable>
 
         <View>
-          <Text style={styles.title}>Curhat lewat teks</Text>
+          <Text style={styles.title}>
+            Curhat lewat teks
+          </Text>
+
           <Text style={styles.subtitle}>
             Ceritakan apa pun yang sedang kamu rasakan.
           </Text>
@@ -53,19 +146,51 @@ export default function CurhatTextScreen() {
         </Text>
       </View>
 
-      <Text style={styles.label}>Ceritamu</Text>
+      <Text style={styles.label}>
+        Ceritamu
+      </Text>
 
       <TextInput
+        value={text}
+        onChangeText={(value) => {
+          setText(value);
+
+          if (error) {
+            setError('');
+          }
+        }}
         placeholder="Ceritakan apa yang sedang terjadi dan bagaimana perasaanmu..."
         placeholderTextColor="#A6A0B3"
         multiline
         textAlignVertical="top"
-        style={styles.textArea}
+        style={[
+          styles.textArea,
+          error
+            ? styles.textAreaError
+            : null,
+        ]}
         editable={!loading}
+        maxLength={MAX_LENGTH}
       />
 
+      <View style={styles.inputInfo}>
+        <View style={styles.errorContainer}>
+          {error ? (
+            <Text style={styles.errorText}>
+              {error}
+            </Text>
+          ) : null}
+        </View>
+
+        <Text style={styles.characterCount}>
+          {text.length}/{MAX_LENGTH}
+        </Text>
+      </View>
+
       <View style={styles.infoBox}>
-        <Text style={styles.infoIcon}>💜</Text>
+        <Text style={styles.infoIcon}>
+          💜
+        </Text>
 
         <Text style={styles.infoText}>
           Ceritamu akan diproses untuk membantu memahami emosi dan memberikan
@@ -91,8 +216,13 @@ export default function CurhatTextScreen() {
       ) : (
         <>
           <Pressable
-            style={styles.primaryButton}
+            style={[
+              styles.primaryButton,
+              !text.trim() &&
+                styles.primaryButtonDisabled,
+            ]}
             onPress={handleSubmit}
+            disabled={loading}
           >
             <Text style={styles.primaryButtonText}>
               Kirim Curhat
@@ -196,7 +326,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#3F384A',
     lineHeight: 22,
+  },
+
+  textAreaError: {
+    borderColor: '#D95C5C',
+  },
+
+  inputInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 8,
     marginBottom: 16,
+  },
+
+  errorContainer: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  errorText: {
+    fontSize: 12,
+    color: '#D95C5C',
+    lineHeight: 17,
+  },
+
+  characterCount: {
+    fontSize: 12,
+    color: '#938B9D',
   },
 
   infoBox: {
@@ -246,6 +403,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+  },
+
+  primaryButtonDisabled: {
+    opacity: 0.55,
   },
 
   primaryButtonText: {
