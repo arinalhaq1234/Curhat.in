@@ -18,8 +18,10 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,12 @@ export default function RegisterScreen() {
 
     setError('');
 
-    if (!username.trim() || !email.trim() || !password.trim()) {
+    if (
+      !username.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !confirmPassword.trim()
+    ) {
       setError('Semua field wajib diisi.');
       return;
     }
@@ -60,6 +67,11 @@ export default function RegisterScreen() {
       setError(
         'Password harus terdiri dari 8–20 karakter dan mengandung huruf besar, huruf kecil, angka, serta karakter khusus.'
       );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak sesuai dengan password.');
       return;
     }
 
@@ -223,6 +235,48 @@ export default function RegisterScreen() {
           Password 8–20 karakter, mengandung huruf besar,
           huruf kecil, angka, dan karakter khusus.
         </Text>
+
+        {/* KONFIRMASI PASSWORD */}
+        <Text style={styles.label}>
+          Konfirmasi Password
+        </Text>
+
+        <View style={styles.inputContainer}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color="#91899D"
+          />
+
+          <TextInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Masukkan ulang password"
+            placeholderTextColor="#A6A0B3"
+            secureTextEntry={!showConfirmPassword}
+            editable={!loading}
+            maxLength={20}
+            style={styles.input}
+          />
+
+          <Pressable
+            onPress={() =>
+              setShowConfirmPassword(!showConfirmPassword)
+            }
+            disabled={loading}
+            hitSlop={10}
+          >
+            <Ionicons
+              name={
+                showConfirmPassword
+                  ? 'eye-off-outline'
+                  : 'eye-outline'
+              }
+              size={21}
+              color="#91899D"
+            />
+          </Pressable>
+        </View>
 
         {/* BUTTON REGISTER */}
         <Pressable
