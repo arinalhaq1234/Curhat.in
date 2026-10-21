@@ -1,7 +1,8 @@
+
 import { loginUser } from '@/services/api';
 import { saveSession } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +16,10 @@ import {
 } from 'react-native';
 
 export default function LoginScreen() {
+  const { notice } = useLocalSearchParams<{
+    notice?: string;
+  }>();
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -23,6 +28,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (loading) return;
+
     setError('');
 
     if (!username.trim() || !password.trim()) {
@@ -96,6 +103,22 @@ export default function LoginScreen() {
           Masuk untuk melanjutkan perjalanan ceritamu.
         </Text>
 
+        {/* NOTIFIKASI SESI LOGIN BERAKHIR */}
+        {typeof notice === 'string' && notice !== '' && (
+          <View style={styles.errorBox}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={18}
+              color="#B95050"
+            />
+
+            <Text style={styles.errorText}>
+              {notice}
+            </Text>
+          </View>
+        )}
+
+        {/* PESAN ERROR LOGIN */}
         {error !== '' && (
           <View style={styles.errorBox}>
             <Ionicons

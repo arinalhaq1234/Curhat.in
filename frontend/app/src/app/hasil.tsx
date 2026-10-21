@@ -12,6 +12,11 @@ import {
   View,
 } from 'react-native';
 
+// Membersihkan tanda Markdown ** dari respons Gemini
+const formatText = (value: string) => {
+  return value.replace(/\*\*(.*?)\*\*/gs, '$1');
+};
+
 export default function HasilScreen() {
   const params = useLocalSearchParams();
 
@@ -79,7 +84,6 @@ export default function HasilScreen() {
           <Text style={styles.title}>
             Hasil Analisis
           </Text>
-          
         </View>
       </View>
 
@@ -181,7 +185,7 @@ export default function HasilScreen() {
         </View>
 
         <Text style={styles.recommendationText}>
-          {rekomendasi ||
+          {formatText(rekomendasi) ||
             'Rekomendasi belum tersedia.'}
         </Text>
       </View>

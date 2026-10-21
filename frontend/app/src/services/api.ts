@@ -118,8 +118,6 @@ export async function sendTextCurhat(
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({
-      teks,
-    }),
+    body: JSON.stringify({ teks }),
   });
 }

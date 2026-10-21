@@ -35,6 +35,7 @@ export default function RegisterScreen() {
 
     setError('');
 
+    // VALIDASI FIELD KOSONG
     if (
       !username.trim() ||
       !email.trim() ||
@@ -45,16 +46,19 @@ export default function RegisterScreen() {
       return;
     }
 
+    // VALIDASI USERNAME
     if (username.trim().length < 3) {
       setError('Username minimal 3 karakter.');
       return;
     }
 
+    // VALIDASI EMAIL
     if (!validateEmail(email.trim())) {
       setError('Format email tidak valid.');
       return;
     }
 
+    // VALIDASI KETENTUAN PASSWORD
     const isPasswordValid =
       password.length >= 8 &&
       password.length <= 20 &&
@@ -70,11 +74,29 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Konfirmasi password tidak sesuai dengan password.');
+    // PASSWORD TIDAK BOLEH MENGANDUNG USERNAME
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedPassword = password.toLowerCase();
+
+    if (
+      normalizedUsername.length >= 3 &&
+      normalizedPassword.includes(normalizedUsername)
+    ) {
+      setError(
+        'Password tidak boleh sama atau terlalu mirip dengan username. Silakan gunakan password lain.'
+      );
       return;
     }
 
+    // VALIDASI KONFIRMASI PASSWORD
+    if (password !== confirmPassword) {
+      setError(
+        'Konfirmasi password tidak sesuai dengan password.'
+      );
+      return;
+    }
+
+    // PROSES REGISTRASI
     try {
       setLoading(true);
 
@@ -129,6 +151,7 @@ export default function RegisterScreen() {
           Isi data berikut untuk mendaftar ke Curhat.in.
         </Text>
 
+        {/* PESAN ERROR */}
         {error !== '' && (
           <View style={styles.errorBox}>
             <Ionicons
@@ -214,7 +237,9 @@ export default function RegisterScreen() {
           />
 
           <Pressable
-            onPress={() => setShowPassword(!showPassword)}
+            onPress={() =>
+              setShowPassword(!showPassword)
+            }
             disabled={loading}
             hitSlop={10}
           >
@@ -312,7 +337,9 @@ export default function RegisterScreen() {
           </Text>
 
           <Pressable
-            onPress={() => router.replace('/login')}
+            onPress={() =>
+              router.replace('/login')
+            }
             disabled={loading}
           >
             <Text style={styles.loginLink}>

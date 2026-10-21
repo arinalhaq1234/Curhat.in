@@ -1,5 +1,6 @@
+
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -16,38 +17,65 @@ import {
   getAccessToken,
 } from '@/services/session';
 
-const MAX_LENGTH = 1000;
+const MIN_LENGTH = 150;
+const MAX_LENGTH = 5000;
 
 export default function CurhatTextScreen() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const submittingRef = useRef(false);
+
   const handleSubmit = async () => {
-    if (loading) {
+    if (submittingRef.current) {
       return;
     }
 
     setError('');
 
-    if (!text.trim()) {
+    const trimmedText = text.trim();
+
+    // VALIDASI CERITA KOSONG
+    if (!trimmedText) {
       setError('Cerita tidak boleh kosong.');
       return;
     }
+
+    // VALIDASI MINIMAL 150 KARAKTER
+    if (trimmedText.length < MIN_LENGTH) {
+      setError(
+        `Cerita minimal ${MIN_LENGTH} karakter. Silakan lengkapi ceritamu.`
+      );
+      return;
+    }
+
+    // VALIDASI MAKSIMAL 5000 KARAKTER
+    if (trimmedText.length > MAX_LENGTH) {
+      setError(
+        `Cerita maksimal ${MAX_LENGTH} karakter. Silakan persingkat ceritamu.`
+      );
+      return;
+    }
+
+    submittingRef.current = true;
 
     try {
       setLoading(true);
 
       const accessToken = await getAccessToken();
 
+      // SESI LOGIN TIDAK TERSEDIA
       if (!accessToken) {
         await clearSession();
         router.replace('/login');
         return;
       }
 
+      // KIRIM CERITA KE BACKEND
+      // Tanpa timeout 3 menit
       const response = await sendTextCurhat(
-        text.trim(),
+        trimmedText,
         accessToken
       );
 
@@ -58,6 +86,7 @@ export default function CurhatTextScreen() {
 
       const result = response.data ?? response;
 
+      // NAVIGASI KE HALAMAN HASIL ANALISIS
       router.push({
         pathname: '/hasil',
         params: {
@@ -81,9 +110,17 @@ export default function CurhatTextScreen() {
         error
       );
 
+      // SESI LOGIN BERAKHIR
       if (error?.status === 401) {
         await clearSession();
-        router.replace('/login');
+
+        router.replace({
+          pathname: '/login',
+          params: {
+            notice: 'Sesi kamu telah berakhir. Silakan masuk kembali.',
+          },
+        });
+
         return;
       }
 
@@ -97,16 +134,38 @@ export default function CurhatTextScreen() {
           message
         );
 
-      setError(
-        isConnectionError
-          ? 'Gagal terhubung ke server. Periksa koneksi dan coba lagi.'
-          : message || 'Gagal mengirim cerita. Silakan coba lagi.'
-      );
+      if (isConnectionError) {
+        setError(
+          'Gagal terhubung ke server. Periksa koneksi dan coba lagi.'
+        );
+      } else if (error?.status === 429) {
+        setError(
+          'Layanan analisis sedang menerima terlalu banyak permintaan. Silakan coba lagi beberapa saat.'
+        );
+      } else if (error?.status === 500) {
+        setError(
+          'Ada kendala saat memproses ceritamu. Silakan coba lagi nanti.'
+        );
+      } else if (
+        error?.status === 502 ||
+        error?.status === 503 ||
+        error?.status === 504
+      ) {
+        setError(
+          'Layanan analisis sedang mengalami gangguan. Silakan coba lagi nanti.'
+        );
+      } else {
+        setError(
+          message ||
+            'Gagal mengirim cerita. Silakan coba lagi.'
+        );
+      }
 
-      // Teks sengaja tetap disimpan
-      // agar pengguna dapat mencoba mengirim lagi.
+      // Teks curhatan tetap tersimpan
+      // agar pengguna tidak perlu mengetik ulang.
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
@@ -313,7 +372,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#514A5B',
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   textArea: {
