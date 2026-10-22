@@ -18,7 +18,7 @@ from mutagen.wave import WAVE
 
 from .models import RiwayatCurhat
 from .serializers import RegisterSerializer, RiwayatCurhatSerializer
-from .services import analisis_audio, analisis_teks
+from .services import InputCurhatError, analisis_audio, analisis_teks
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,12 @@ def baca_durasi_audio(audio_bytes, mime_type):
 
 def tangani_error_curhat(error, jenis):
     """Catat detail teknis di server, kirim pesan aman ke pengguna."""
+    if isinstance(error, InputCurhatError):
+        return Response(
+            {"success": False, "message": str(error)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     logger.exception("Gagal memproses curhat %s", jenis)
 
     if isinstance(error, DatabaseError):

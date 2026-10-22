@@ -2,6 +2,9 @@
 
 > Ruang digital berbasis AI untuk membantu mahasiswa bercerita dan memahami kondisi emosionalnya melalui teks maupun suara.
 
+Panduan implementasi, kontrak hasil BE-002, dan pengujian analisis teks/audio:
+[AI-003](docs/AI-003.md).
+
 ---
 
 ## 🌱 Tentang Curhat.in

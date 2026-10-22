@@ -161,6 +161,7 @@ class RiwayatCurhatAdminForm(forms.ModelForm):
         # -----------------------------------------------------
 
         instance.emosi = hasil_ai.get("emosi")
+        instance.ringkasan_cerita = hasil_ai.get("ringkasan_cerita")
         instance.akar_masalah = hasil_ai.get("akar_masalah")
         instance.rekomendasi = hasil_ai.get("rekomendasi")
 
@@ -183,6 +184,7 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
     readonly_fields = (
         "audio_name",
         "emosi",
+        "ringkasan_cerita",
         "akar_masalah",
         "rekomendasi",
         "waktu",
@@ -200,6 +202,7 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
     search_fields = (
         "teks",
         "emosi",
+        "ringkasan_cerita",
         "akar_masalah",
         "rekomendasi",
     )
