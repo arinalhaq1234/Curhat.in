@@ -38,13 +38,13 @@ def respons_ai(hasil):
 
 
 def rekaman_wav():
-    """Rekaman sintetis 0,1 detik untuk memeriksa parser upload, bukan kualitas AI."""
+    """PCM nonzero sintetis 0,1 detik untuk parser upload, bukan kualitas AI."""
     buffer = BytesIO()
     with wave.open(buffer, "wb") as rekaman:
         rekaman.setnchannels(1)
         rekaman.setsampwidth(2)
         rekaman.setframerate(8000)
-        rekaman.writeframes(b"\0\0" * 800)
+        rekaman.writeframes(b"\x10\x00\xf0\xff" * 400)
     return buffer.getvalue()
 
 
@@ -73,7 +73,7 @@ class ParseJsonTests(SimpleTestCase):
 
 
 class ValidationTests(SimpleTestCase):
-    def test_all_seven_categories_are_normalized_without_changing_field_names(self):
+    def test_all_eight_categories_are_normalized_without_changing_field_names(self):
         for kategori, label in services.KATEGORI_EMOSI.items():
             with self.subTest(kategori=kategori):
                 hasil = services.validasi_hasil_analisis(hasil_contoh(" " + kategori.upper() + " "))
@@ -94,7 +94,7 @@ class ValidationTests(SimpleTestCase):
                     services.validasi_hasil_analisis({**hasil_contoh(), field: value})
 
     def test_unknown_emotion_and_extra_fields_are_rejected(self):
-        for hasil in [hasil_contoh("Bahagia"),
+        for hasil in [hasil_contoh("Euforia"),
                       {**hasil_contoh(), "respons_empatik": "Field belum disepakati"},
                       {**hasil_contoh(), "valid": True}, [], None]:
             with self.subTest(hasil=hasil), self.assertRaises(ValueError):
@@ -324,7 +324,7 @@ class BackendIntegrationTests(TestCase):
 
     def test_invalid_ai_outputs_are_502_and_never_saved(self):
         cases = ["bukan JSON", json.dumps({"emosi": "Cemas"}),
-                 json.dumps(hasil_contoh("Bahagia")),
+                 json.dumps(hasil_contoh("Euforia")),
                  json.dumps({**hasil_contoh(), "rekomendasi": ["saran"]}),
                  json.dumps({"valid": False, "pesan": None})]
         for text in cases:

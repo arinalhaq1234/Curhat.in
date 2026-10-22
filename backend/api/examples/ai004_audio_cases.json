@@ -1,0 +1,122 @@
+[
+  {
+    "id": "musik-dominan-tanpa-curhat",
+    "cara_menyiapkan_rekaman": "Gunakan musik buatan sendiri atau musik yang boleh digunakan, tanpa cerita pribadi yang dapat dipahami.",
+    "input_deskripsi": "Musik atau lagu mendominasi audio; tidak terdengar curhatan pribadi yang dapat dianalisis.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "musik_dominan",
+    "kriteria_review": [
+      "Pesan penolakan menjelaskan bahwa musik atau lagu mendominasi rekaman.",
+      "Pesan mengarahkan pengguna mengirim rekaman cerita pribadi dengan suara yang jelas.",
+      "Lirik tidak dianggap otomatis sebagai pengalaman pribadi pengguna."
+    ]
+  },
+  {
+    "id": "suara-teredam-tidak-dipahami",
+    "cara_menyiapkan_rekaman": "Rekam suara uji dari jarak terlalu jauh atau tertutup hingga perkataannya tidak dapat dipahami. Dengarkan ulang untuk memastikan kondisi tersebut.",
+    "input_deskripsi": "Ada suara manusia, tetapi kata-kata dan konteks cerita tidak dapat dipahami; tidak ada musik atau kebisingan dominan yang jelas.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "suara_tidak_jelas",
+    "kriteria_review": [
+      "Pesan penolakan menyebut suara atau ucapan yang tidak jelas, bukan menganggap isi cerita tidak pantas.",
+      "Tidak dibuat ringkasan atau emosi dari ucapan yang tidak dipahami.",
+      "Pengguna diarahkan merekam ulang dengan suara yang lebih jelas."
+    ]
+  },
+  {
+    "id": "kebisingan-menutupi-cerita",
+    "cara_menyiapkan_rekaman": "Buat rekaman uji dengan suara lingkungan atau kipas yang menutupi ucapan sampai isi cerita tidak dapat dipahami.",
+    "input_deskripsi": "Kebisingan latar mendominasi sehingga cerita pribadi yang diucapkan tidak dapat dipahami.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "kebisingan_dominan",
+    "kriteria_review": [
+      "Pesan menjelaskan kebisingan yang menutupi cerita dan menyarankan tempat lebih tenang.",
+      "Tidak menebak isi cerita berdasarkan kata-kata yang terputus.",
+      "Riwayat analisis tidak disimpan jika uji dilakukan melalui endpoint."
+    ]
+  },
+  {
+    "id": "rekaman-hening",
+    "cara_menyiapkan_rekaman": "Rekam beberapa detik tanpa berbicara dan tanpa materi suara bermakna. Gunakan file audio yang valid, bukan file kosong.",
+    "input_deskripsi": "Rekaman audio valid tetapi tidak berisi ucapan atau cerita yang terdengar.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "hening",
+    "kriteria_review": [
+      "Pesan menyebut tidak adanya suara atau cerita yang terdengar.",
+      "Hening tidak dikategorikan sebagai emosi Netral.",
+      "Pengguna diminta merekam cerita dengan suara yang terdengar."
+    ]
+  },
+  {
+    "id": "pembacaan-materi-newton",
+    "cara_menyiapkan_rekaman": "Bacakan penjelasan singkat tentang hukum Newton sebagai materi pelajaran, tanpa menceritakan pengalaman atau perasaan pribadi.",
+    "input_deskripsi": "Pembicara menjelaskan hukum gerak Newton serta contoh gaya dan percepatan; tidak ada pengalaman atau kondisi pribadi yang diceritakan.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "materi_tanpa_curhat",
+    "kriteria_review": [
+      "Penolakan menjelaskan bahwa isi berupa materi atau penjelasan tanpa konteks cerita pribadi.",
+      "Materi pelajaran tidak dipaksakan menjadi curhat Netral.",
+      "Tidak ditolak hanya karena topiknya kuliah; yang dinilai adalah isi tanpa konteks pribadi."
+    ]
+  },
+  {
+    "id": "presentasi-impersonal",
+    "cara_menyiapkan_rekaman": "Bacakan presentasi buatan tentang prosedur pemilahan sampah, tanpa cerita pribadi, perasaan, atau pengalaman pembicara.",
+    "input_deskripsi": "Rekaman berisi penjelasan informatif untuk audiens tentang jenis sampah dan prosedur pemilahannya.",
+    "diterima_diharapkan": false,
+    "alasan_diharapkan": "materi_tanpa_curhat",
+    "kriteria_review": [
+      "Alasan sesuai dengan presentasi atau penjelasan tanpa curhat pribadi.",
+      "Sistem tidak menebak emosi pembicara dari intonasi presentasi.",
+      "Ucapan informatif tidak dianggap curhat hanya karena memakai kata saya sebagai pembawa acara."
+    ]
+  },
+  {
+    "id": "cemas-sebelum-presentasi",
+    "cara_menyiapkan_rekaman": "Rekam cerita buatan: Besok aku presentasi di kelas. Aku cemas akan lupa materi dan sulit tidur karena terus memikirkannya.",
+    "input_deskripsi": "Pembicara menceritakan kecemasan pribadi sebelum presentasi kuliah, bukan membacakan materi presentasi.",
+    "diterima_diharapkan": true,
+    "alasan_diharapkan": null,
+    "kriteria_review": [
+      "Cerita diterima meskipun menyebut presentasi dan kuliah.",
+      "Empat field BE-002 terisi sesuai pengalaman dan kecemasan yang diceritakan.",
+      "Rekomendasi mengaitkan langkah dengan persiapan presentasi, bukan memberi saran generik yang tidak terkait."
+    ]
+  },
+  {
+    "id": "membaca-naskah-curhat-pribadi",
+    "cara_menyiapkan_rekaman": "Tulis cerita uji pribadi tentang kewalahan membagi waktu kerja dan kuliah, lalu bacakan dari catatan dengan intonasi datar tetapi ucapan jelas.",
+    "input_deskripsi": "Pembicara membaca cerita pengalaman dan perasaannya sendiri dari naskah yang disiapkan; isi curhat pribadi tetap jelas.",
+    "diterima_diharapkan": true,
+    "alasan_diharapkan": null,
+    "kriteria_review": [
+      "Cerita diterima walaupun dibaca dari catatan atau disampaikan dengan intonasi datar.",
+      "Penilaian mengikuti isi pengalaman pribadi, bukan gaya penyampaian.",
+      "Saran mempertimbangkan keterbatasan waktu yang diceritakan tanpa menambah asumsi."
+    ]
+  },
+  {
+    "id": "curhat-jelas-dengan-noise-ringan",
+    "cara_menyiapkan_rekaman": "Rekam cerita pribadi buatan dengan suara kipas atau aktivitas latar ringan. Dengarkan ulang dan pastikan seluruh konteks cerita masih dipahami.",
+    "input_deskripsi": "Ada kebisingan ringan, tetapi suara dan konteks cerita pribadi tetap jelas.",
+    "diterima_diharapkan": true,
+    "alasan_diharapkan": null,
+    "kriteria_review": [
+      "Noise ringan tidak menyebabkan penolakan otomatis.",
+      "Ringkasan hanya mengikuti cerita yang dipahami tanpa menambahkan kejadian dari suara latar.",
+      "Empat field BE-002 tersedia dengan rekomendasi yang relevan."
+    ]
+  },
+  {
+    "id": "cerita-pribadi-netral-tentang-kuliah",
+    "cara_menyiapkan_rekaman": "Rekam cerita buatan: Hari ini aku mengikuti kuliah, makan siang, lalu menyelesaikan tugas. Perasaanku biasa saja dan tidak ada hal yang mengganggu.",
+    "input_deskripsi": "Pengalaman harian pribadi di lingkungan kuliah dengan perasaan netral; bukan penjelasan materi pelajaran.",
+    "diterima_diharapkan": true,
+    "alasan_diharapkan": null,
+    "kriteria_review": [
+      "Pengalaman pribadi yang jelas tetap diterima walaupun tidak mengandung masalah atau emosi negatif.",
+      "Kategori Netral tidak dipakai untuk menyamarkan penolakan materi pelajaran.",
+      "Akar masalah dan rekomendasi tidak mengarang gangguan yang tidak diceritakan."
+    ]
+  }
+]

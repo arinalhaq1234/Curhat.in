@@ -5,6 +5,9 @@
 Panduan implementasi, kontrak hasil BE-002, dan pengujian analisis teks/audio:
 [AI-003](docs/AI-003.md).
 
+Panduan rekomendasi personal, penyajian mobile, dan contoh pembanding:
+[AI-004](docs/AI-004.md).
+
 ---
 
 ## 🌱 Tentang Curhat.in

@@ -1,4 +1,4 @@
-"""Contoh AI-003 memakai fungsi produksi; --daftar tidak memanggil Gemini."""
+"""Contoh AI-003/AI-004 memakai fungsi produksi; --daftar tanpa request Gemini."""
 
 import argparse
 import json
@@ -22,6 +22,10 @@ from api.services import InputCurhatError, analisis_audio, analisis_teks  # noqa
 
 
 CONTOH_PATH = BACKEND_DIR / "api" / "examples" / "ai003_cases.json"
+CONTOH_PATHS = {
+    "ai003": CONTOH_PATH,
+    "ai004": BACKEND_DIR / "api" / "examples" / "ai004_cases.json",
+}
 FORMAT_AUDIO = {
     ".mp3": ("audio/mpeg", MP3),
     ".m4a": ("audio/mp4", MP4),
@@ -57,16 +61,22 @@ def uji_analisis_audio(nama_file_audio):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Uji fungsi produksi AI-003 tanpa menyimpan data ke database."
+        description="Uji fungsi produksi AI-003/AI-004 tanpa menyimpan data ke database."
+    )
+    parser.add_argument(
+        "--tahap",
+        choices=tuple(CONTOH_PATHS),
+        default="ai003",
+        help="Pilih bahan uji analisis ai003 (default) atau rekomendasi personal ai004.",
     )
     pilihan = parser.add_mutually_exclusive_group(required=True)
     pilihan.add_argument("--daftar", action="store_true", help="Lihat bahan uji tanpa API key/kuota.")
-    pilihan.add_argument("--kasus", help="Jalankan satu id contoh, misalnya cemas atau ambigu.")
+    pilihan.add_argument("--kasus", help="Jalankan satu id contoh dari tahap yang dipilih; lihat --daftar.")
     pilihan.add_argument("--teks", help="Kirim cerita teks ke Gemini.")
     pilihan.add_argument("--audio", type=Path, help="Kirim path file MP3/M4A/WAV ke Gemini.")
     args = parser.parse_args()
 
-    contoh = json.loads(CONTOH_PATH.read_text(encoding="utf-8"))
+    contoh = json.loads(CONTOH_PATHS[args.tahap].read_text(encoding="utf-8"))
     if args.daftar:
         print(json.dumps(contoh, ensure_ascii=False, indent=2))
         return 0

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "cemas-ujian-waktu-terbatas",
+    "teks": "Ujian tinggal seminggu lagi dan aku cemas akan gagal karena materi belum selesai dipelajari. Aku bekerja paruh waktu setiap sore, jadi hanya punya sekitar tiga puluh menit untuk belajar setiap hari.",
+    "emosi_diharapkan": "Cemas",
+    "diterima": true,
+    "catatan": "Khawatir terhadap hasil ujian; waktu belajar terbatas karena bekerja. Jangan menyarankan belajar berjam-jam atau berhenti bekerja.",
+    "target_rekomendasi": [
+      "Mengaitkan empati dengan kekhawatiran ujian dan keterbatasan waktu.",
+      "Memberi langkah belajar yang dapat dimulai dalam waktu sekitar tiga puluh menit.",
+      "Tidak menjanjikan kelulusan atau mengasumsikan pengguna dapat meninggalkan pekerjaan."
+    ],
+    "contoh_hasil": {
+      "emosi": "Cemas",
+      "ringkasan_cerita": "Kamu khawatir gagal ujian minggu depan karena materi belum selesai, sementara pekerjaan paruh waktu membatasi waktu belajar harian.",
+      "akar_masalah": "Ketidakpastian hasil ujian dan terbatasnya waktu untuk mempersiapkan materi.",
+      "rekomendasi": "Kekhawatiran menghadapi ujian bisa terasa berat ketika waktu belajarmu juga terbatas oleh pekerjaan.\n\n1. Pilih materi yang paling perlu dipahami terlebih dahulu, lalu gunakan waktu sekitar tiga puluh menit untuk satu bagian kecil. Misalnya, baca satu konsep dan coba satu soal, kemudian catat bagian yang masih membingungkan agar sesi berikutnya lebih terarah.\n\n2. Susun target kecil untuk sisa hari sebelum ujian sesuai jadwal kerjamu, tanpa memaksakan belajar berjam-jam. Jika ada materi yang sulit, siapkan satu pertanyaan spesifik untuk ditanyakan kepada dosen atau dibahas dengan teman ketika ada kesempatan."
+    }
+  },
+  {
+    "id": "cemas-biaya-kuliah",
+    "teks": "Aku cemas karena biaya kuliah harus dibayar dua minggu lagi. Uangku sekarang hanya cukup untuk makan dan transportasi. Aku belum tahu apakah kampus punya bantuan atau pilihan cicilan.",
+    "emosi_diharapkan": "Cemas",
+    "diterima": true,
+    "catatan": "Kekhawatiran biaya dengan keterbatasan uang yang disebutkan secara eksplisit. Pilihan bantuan kampus belum diketahui, bukan fasilitas yang sudah pasti tersedia.",
+    "target_rekomendasi": [
+      "Memberikan langkah mencari informasi biaya dan bantuan tanpa pengeluaran tambahan.",
+      "Mengarahkan pertanyaan ke bagian kampus terkait sebagai pilihan yang perlu diperiksa.",
+      "Tidak menjadikan kegiatan berbayar, pinjaman, atau bantuan keluarga yang belum disebutkan sebagai solusi pasti."
+    ],
+    "contoh_hasil": {
+      "emosi": "Cemas",
+      "ringkasan_cerita": "Kamu khawatir menghadapi tenggat biaya kuliah dua minggu lagi karena uang yang tersedia baru cukup untuk makan dan transportasi.",
+      "akar_masalah": "Keterbatasan dana untuk biaya kuliah serta belum adanya informasi tentang pilihan pembayaran atau bantuan kampus.",
+      "rekomendasi": "Tenggat biaya kuliah yang mendekat bisa membuatmu khawatir, terlebih ketika uang yang tersedia sudah diperlukan untuk kebutuhan sehari-hari.\n\n1. Catat jumlah biaya yang harus dibayar, tenggatnya, dan dana yang tersedia agar kebutuhanmu lebih jelas saat mencari informasi. Tetap pertimbangkan kebutuhan makan dan transportasi; kamu tidak perlu menambah pengeluaran untuk memulai langkah ini.\n\n2. Hubungi bagian keuangan atau kemahasiswaan kampus untuk menanyakan apakah ada pilihan cicilan, penyesuaian tenggat, atau bantuan yang bisa diajukan. Tanyakan syarat dan waktu pengajuannya, lalu catat jawabannya agar kamu dapat membandingkan pilihan yang benar-benar tersedia."
+    }
+  },
+  {
+    "id": "cemas-menunggu-wawancara",
+    "teks": "Aku sedang menunggu hasil wawancara kerja. Perusahaan bilang akan memberi kabar Jumat, sekarang masih Rabu. Aku cemas ditolak dan terus membuka email sampai pekerjaan harianku terbengkalai.",
+    "emosi_diharapkan": "Cemas",
+    "diterima": true,
+    "catatan": "Menunggu hasil yang belum melewati tenggat pemberitahuan. Jangan menyatakan sudah ditolak atau mendorong pengiriman pesan berulang sebelum Jumat.",
+    "target_rekomendasi": [
+      "Membantu membatasi pengecekan email agar kegiatan sehari-hari tetap berjalan.",
+      "Menghormati waktu pemberitahuan yang disampaikan perusahaan.",
+      "Tidak menjanjikan penerimaan atau memberikan saran belajar ujian dan pembiayaan kuliah."
+    ],
+    "contoh_hasil": {
+      "emosi": "Cemas",
+      "ringkasan_cerita": "Kamu cemas ditolak setelah wawancara dan terus mengecek email, meskipun waktu pemberitahuan yang dijanjikan masih dua hari lagi.",
+      "akar_masalah": "Ketidakpastian hasil wawancara membuat perhatianmu tersita selama menunggu kabar.",
+      "rekomendasi": "Menunggu kabar wawancara bisa membuat pikiran terus kembali pada kemungkinan ditolak, apalagi ketika pengecekan email mulai mengganggu kegiatanmu.\n\n1. Pilih beberapa waktu khusus untuk memeriksa email, misalnya setelah menyelesaikan satu pekerjaan, lalu tutup email di luar waktu tersebut. Mulai kembali dari satu tugas harian kecil yang tertunda agar perhatianmu punya tempat berpijak selama menunggu.\n\n2. Beri perusahaan waktu sampai Jumat sesuai informasi yang sudah mereka sampaikan. Jika waktu tersebut telah berlalu tanpa kabar, pertimbangkan mengirim satu pesan tindak lanjut yang singkat dan sopan; saat ini belum ada hasil yang bisa dipastikan dari belum datangnya email."
+    }
+  },
+  {
+    "id": "sedih-kehilangan",
+    "teks": "Kucing yang menemaniku sejak kecil meninggal kemarin. Aku sedih sekali dan sering menangis saat melihat tempat tidurnya. Aku belum ingin membereskan barang-barangnya.",
+    "emosi_diharapkan": "Sedih",
+    "diterima": true,
+    "catatan": "Duka karena kehilangan hewan peliharaan. Hormati keputusan belum ingin membereskan barang; jangan memaksa segera mengganti hewan atau melupakan kehilangan.",
+    "target_rekomendasi": [
+      "Mengakui kesedihan tanpa meremehkan hubungan dengan hewan peliharaan.",
+      "Memberi ruang terhadap pilihan pengguna tentang barang kenangan.",
+      "Tidak menetapkan tenggat pulih atau memberi jaminan perasaan segera membaik."
+    ],
+    "contoh_hasil": {
+      "emosi": "Sedih",
+      "ringkasan_cerita": "Kamu berduka setelah kucing yang menemanimu sejak kecil meninggal dan belum ingin membereskan barang-barangnya.",
+      "akar_masalah": "Kehilangan hewan peliharaan yang memiliki hubungan dekat denganmu.",
+      "rekomendasi": "Kehilangan kucing yang menemanimu sejak kecil bisa terasa sangat menyakitkan, dan kamu tidak harus segera siap membereskan barang-barangnya.\n\n1. Biarkan keputusan tentang tempat tidur dan barang kenangannya menunggu sampai kamu merasa ingin menentukannya. Jika suatu benda terasa terlalu berat untuk dilihat, kamu bisa memilih menyimpannya sementara tanpa harus membuangnya atau membuat keputusan permanen sekarang.\n\n2. Jika terasa membantu, tuliskan satu kenangan tentang kucingmu atau pilih foto yang ingin kamu simpan. Lakukan hanya sejauh yang nyaman; kamu juga boleh berhenti dan memberi diri waktu ketika kesedihan muncul."
+    }
+  },
+  {
+    "id": "tertekan-tugas-bertumpuk",
+    "teks": "Tiga laporan kuliah harus dikumpulkan minggu ini, sementara besok aku juga harus masuk kerja. Aku merasa kewalahan dan bersalah kalau istirahat. Aku tidak bisa menyediakan satu hari penuh untuk mengerjakan semuanya.",
+    "emosi_diharapkan": "Tertekan",
+    "diterima": true,
+    "catatan": "Beban tugas yang sedang berlangsung, jadwal kerja, dan rasa bersalah saat istirahat. Jangan mengandaikan satu hari kosong atau semua tenggat dapat diubah.",
+    "target_rekomendasi": [
+      "Memecah tugas berdasarkan tenggat dan langkah awal yang kecil.",
+      "Memasukkan jeda yang realistis di antara waktu kerja yang tersedia.",
+      "Menempatkan pembicaraan tenggat sebagai pilihan, bukan menjanjikan kelonggaran."
+    ],
+    "contoh_hasil": {
+      "emosi": "Tertekan",
+      "ringkasan_cerita": "Kamu kewalahan menghadapi tiga laporan dan jadwal kerja, serta merasa bersalah saat beristirahat.",
+      "akar_masalah": "Tuntutan kuliah dan pekerjaan yang datang bersamaan dengan waktu pengerjaan terbatas.",
+      "rekomendasi": "Banyaknya laporan di tengah jadwal kerja bisa membuatmu kewalahan, dan beristirahat tetap merupakan kebutuhan meskipun pekerjaan belum selesai.\n\n1. Urutkan ketiga laporan berdasarkan tenggat dan bagian yang paling mendesak. Pilih satu langkah kecil yang bisa dikerjakan dalam waktu yang tersedia, seperti membuat kerangka atau mengumpulkan satu bahan, lalu sisipkan jeda singkat sebelum melanjutkan.\n\n2. Periksa apakah ada bagian tugas yang membutuhkan klarifikasi atau pembagian kerja. Jika jadwalnya memang bertabrakan, pertimbangkan menghubungi dosen atau pihak terkait lebih awal untuk menjelaskan situasimu dan menanyakan pilihan yang mungkin tersedia, tanpa menganggap tenggat pasti berubah."
+    }
+  },
+  {
+    "id": "kesepian-tanpa-dukungan-dekat",
+    "teks": "Sejak pindah kos aku merasa kesepian. Aku belum punya teman dekat di kota ini dan sedang tidak punya orang yang nyaman kuhubungi untuk bercerita. Aku juga tidak punya uang untuk ikut kegiatan berbayar.",
+    "emosi_diharapkan": "Kesepian",
+    "diterima": true,
+    "catatan": "Belum tersedia dukungan dekat dan biaya kegiatan terbatas. Jangan menyuruh langsung menelepon teman dekat atau membayar kegiatan sebagai satu-satunya pilihan.",
+    "target_rekomendasi": [
+      "Menawarkan interaksi kecil secara bertahap tanpa mengasumsikan teman dekat sudah tersedia.",
+      "Menyebut kegiatan atau ruang gratis sebagai pilihan yang perlu dicari.",
+      "Tidak menjamin segera mendapat teman atau memaksa berbagi cerita pribadi."
+    ],
+    "contoh_hasil": {
+      "emosi": "Kesepian",
+      "ringkasan_cerita": "Kamu merasa kesepian setelah pindah kos, belum memiliki teman dekat atau orang yang nyaman dihubungi, dan terbatas dalam biaya kegiatan.",
+      "akar_masalah": "Kurangnya hubungan dan dukungan yang terasa dekat di lingkungan baru.",
+      "rekomendasi": "Berada di tempat baru tanpa orang yang nyaman diajak bercerita bisa membuat hari-harimu terasa sepi.\n\n1. Mulai dari satu interaksi singkat yang tidak membutuhkan biaya, seperti menyapa tetangga kos atau bertanya hal sederhana kepada teman kelas. Kamu tidak perlu langsung menceritakan hal pribadi; perhatikan siapa yang terasa nyaman diajak berbicara dari waktu ke waktu.\n\n2. Cari informasi tentang kegiatan gratis yang sesuai minatmu di kampus atau lingkungan sekitar, lalu pertimbangkan satu yang paling mudah dijangkau. Tujuan awalnya cukup hadir atau ikut percakapan ringan, tanpa menuntut diri segera memiliki teman dekat."
+    }
+  },
+  {
+    "id": "marah-kontribusi-kelompok",
+    "teks": "Aku marah karena teman kelompok menghapus namaku dari laporan padahal aku ikut mengerjakan. Aku masih punya riwayat chat pembagian tugas dan file pekerjaanku, tetapi aku takut pembicaraan langsung jadi pertengkaran.",
+    "emosi_diharapkan": "Marah",
+    "diterima": true,
+    "catatan": "Marah atas kontribusi yang tidak diakui; tersedia bukti pekerjaan dan kekhawatiran konflik. Hindari ajakan membalas, mempermalukan, atau memastikan niat teman.",
+    "target_rekomendasi": [
+      "Mengakui kemarahan atas kejadian yang disebutkan tanpa mengasumsikan motif teman.",
+      "Memanfaatkan bukti kontribusi untuk klarifikasi yang terarah.",
+      "Menawarkan pesan tertulis atau pihak pengampu bila pembicaraan tidak menyelesaikan masalah."
+    ],
+    "contoh_hasil": {
+      "emosi": "Marah",
+      "ringkasan_cerita": "Kamu marah karena namamu dihapus dari laporan meskipun ikut bekerja, dan khawatir klarifikasi langsung berubah menjadi pertengkaran.",
+      "akar_masalah": "Kontribusi dalam tugas kelompok tidak tercantum pada laporan dan belum diklarifikasi bersama kelompok.",
+      "rekomendasi": "Namamu tidak tercantum setelah ikut mengerjakan laporan bisa terasa tidak adil dan memancing kemarahan.\n\n1. Sebelum menghubungi kelompok, kumpulkan riwayat pembagian tugas dan file yang menunjukkan bagian pekerjaanmu. Tuliskan tujuan pembicaraan secara singkat, yaitu meminta penjelasan dan perbaikan pencantuman kontribusi, agar pembahasan tetap pada kejadian yang bisa diperiksa.\n\n2. Jika berbicara langsung terasa mudah memicu pertengkaran, pertimbangkan pesan tertulis yang tenang dengan menyebut fakta dan permintaanmu. Bila tidak ada penyelesaian, tanyakan prosedur klarifikasi kepada dosen pengampu dengan membawa bukti pekerjaan, tanpa mempermalukan teman di ruang publik."
+    }
+  },
+  {
+    "id": "takut-ancaman-spesifik",
+    "teks": "Seseorang mengancam akan memukulku saat aku pulang kuliah. Aku takut bertemu dengannya di jalan. Aku sekarang masih berada di area kampus dan ada petugas keamanan di dekat gerbang.",
+    "emosi_diharapkan": "Takut",
+    "diterima": true,
+    "catatan": "Ancaman spesifik dan bantuan petugas keamanan disebutkan pengguna. Prioritaskan keselamatan langsung; jangan menyarankan menghadapi pengancam atau hanya latihan relaksasi.",
+    "target_rekomendasi": [
+      "Mengutamakan berada di tempat aman dan meminta bantuan yang memang disebutkan tersedia.",
+      "Tidak mendorong pengguna mendatangi atau membalas pengancam.",
+      "Tidak menjamin keamanan atau menambahkan nomor layanan yang tidak diverifikasi."
+    ],
+    "contoh_hasil": {
+      "emosi": "Takut",
+      "ringkasan_cerita": "Kamu takut pulang setelah mendapat ancaman pemukulan dan saat ini masih berada di kampus dekat petugas keamanan.",
+      "akar_masalah": "Ancaman kekerasan tertentu yang membuat perjalanan pulang terasa tidak aman.",
+      "rekomendasi": "Ancaman itu bisa membuatmu takut, dan keselamatanmu perlu didahulukan sebelum memutuskan perjalanan pulang.\n\n1. Tetaplah di area kampus yang ramai dan dekati petugas keamanan yang kamu sebutkan berada di gerbang. Jelaskan ancaman yang diterima dan minta bantuan menentukan langkah pulang yang lebih aman, alih-alih menemui orang tersebut sendirian.\n\n2. Jika pesan ancaman tersimpan, tunjukkan kepada petugas untuk membantu menjelaskan situasinya. Tanyakan apakah mereka dapat mendampingi atau membantu mengatur perjalanan; bila ancaman terjadi saat itu juga, minta bantuan darurat langsung melalui petugas atau layanan setempat."
+    }
+  },
+  {
+    "id": "netral-hari-biasa",
+    "teks": "Hari ini aku kuliah, makan siang, lalu mengerjakan tugas. Perasaanku biasa saja dan tidak ada hal yang sedang mengganggu. Aku cuma ingin mencatat hariku.",
+    "emosi_diharapkan": "Netral",
+    "diterima": true,
+    "catatan": "Tidak ada masalah yang perlu dipecahkan. Rekomendasi boleh jauh lebih singkat dari target umum; jangan mengarang beban atau memaksakan latihan mengatasi kecemasan.",
+    "target_rekomendasi": [
+      "Menanggapi keinginan mencatat hari secara proporsional.",
+      "Memberi pilihan ringan, bukan tindakan pemulihan atas masalah yang tidak disebutkan.",
+      "Tidak memanjangkan rekomendasi demi memenuhi target jumlah kata."
+    ],
+    "contoh_hasil": {
+      "emosi": "Netral",
+      "ringkasan_cerita": "Kamu menjalani kegiatan kuliah dan tugas dengan perasaan biasa saja, lalu ingin mencatat harimu.",
+      "akar_masalah": "Tidak ada masalah khusus yang disampaikan dalam cerita.",
+      "rekomendasi": "Mencatat hari yang terasa biasa saja juga boleh menjadi ruang untuk mengenali pengalamanmu.\n\n1. Jika ingin melanjutkan catatan, pilih satu kejadian kecil yang paling kamu ingat hari ini.\n\n2. Simpan catatan dengan cara yang nyaman bagimu; kamu tidak perlu mencari masalah ketika memang tidak ada hal yang mengganggu."
+    }
+  },
+  {
+    "id": "sedih-penyebab-belum-dijelaskan",
+    "teks": "Aku sedih, tetapi aku belum ingin menjelaskan alasannya sekarang.",
+    "emosi_diharapkan": "Sedih",
+    "diterima": true,
+    "catatan": "Emosi diketahui, tetapi pengguna belum ingin menjelaskan sebab. Jangan menebak kehilangan, konflik, atau memaksa penjelasan; rekomendasi singkat diperbolehkan.",
+    "target_rekomendasi": [
+      "Mengakui kesedihan tanpa menyimpulkan penyebab.",
+      "Menghormati keputusan belum ingin bercerita lebih jauh.",
+      "Menawarkan pilihan kecil yang tidak memerlukan asumsi tentang dukungan, biaya, atau keadaan pengguna."
+    ],
+    "contoh_hasil": {
+      "emosi": "Sedih",
+      "ringkasan_cerita": "Kamu merasa sedih dan belum ingin menjelaskan alasannya.",
+      "akar_masalah": "Penyebab kesedihan belum dijelaskan dalam cerita.",
+      "rekomendasi": "Kesedihanmu tetap boleh diakui meskipun kamu belum ingin menjelaskan penyebabnya.\n\n1. Beri diri ruang untuk berhenti sejenak dari percakapan ini jika itu yang kamu butuhkan; kamu tidak harus menceritakan semuanya sekarang.\n\n2. Jika nanti ingin melanjutkan, kamu bisa mulai dengan menyebut apa yang kamu butuhkan saat ini, tanpa harus menjelaskan seluruh kejadiannya."
+    }
+  }
+]

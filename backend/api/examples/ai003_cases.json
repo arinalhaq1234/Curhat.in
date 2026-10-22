@@ -42,11 +42,46 @@
     "catatan": "Perasaan sendiri/kekurangan dukungan; jangan mengarang bahwa keluarga menolak pengguna."
   },
   {
+    "id": "bahagia",
+    "teks": "Hari ini aku akhirnya lulus sidang skripsi setelah berbulan-bulan berusaha. Aku senang sekali dan bersyukur usahaku membuahkan hasil. Aku ingin menikmati pencapaian ini dengan istirahat sebentar.",
+    "emosi_diharapkan": "Bahagia",
+    "diterima": true,
+    "catatan": "Kegembiraan atas pencapaian menjadi fokus. Akar masalah menjelaskan faktor kebahagiaan tanpa mengarang persoalan; rekomendasi menghormati keinginan beristirahat."
+  },
+  {
+    "id": "singkat-bahagia",
+    "teks": "Aku bahagia hari ini.",
+    "emosi_diharapkan": "Bahagia",
+    "diterima": true,
+    "catatan": "Emosi jelas meski singkat; penyebab kebahagiaan belum dijelaskan dan tidak boleh ditebak."
+  },
+  {
+    "id": "negasi-bahagia",
+    "teks": "Aku tidak bahagia dengan keadaan ini. Aku sedih karena sahabatku pindah dan kami tidak bisa lagi bertemu seperti dulu.",
+    "emosi_diharapkan": "Sedih",
+    "diterima": true,
+    "catatan": "Kata bahagia dinegasikan; jangan memilih Bahagia hanya berdasarkan kemunculan kata."
+  },
+  {
+    "id": "emosi-campuran-bahagia",
+    "teks": "Kemarin aku cemas menghadapi sidang skripsi. Hari ini aku sudah lulus dan yang paling terasa sekarang adalah bahagia serta lega karena perjuanganku selesai.",
+    "emosi_diharapkan": "Bahagia",
+    "diterima": true,
+    "catatan": "Fokus perasaan saat ini adalah kebahagiaan, bukan kecemasan yang terjadi sebelumnya. Jangan otomatis mengutamakan emosi negatif."
+  },
+  {
+    "id": "bahagia-tokoh-lain",
+    "teks": "Temanku bilang dia bahagia setelah pindah ke kota baru. Aku sendiri justru kesepian karena tidak punya teman dekat lagi di kos untuk diajak bercerita.",
+    "emosi_diharapkan": "Kesepian",
+    "diterima": true,
+    "catatan": "Bahagia adalah perasaan teman, bukan pengguna. Pilih fokus perasaan pengguna sendiri."
+  },
+  {
     "id": "netral",
     "teks": "Hari ini aku mengikuti kuliah, makan siang, lalu mengerjakan tugas. Perasaanku biasa saja dan tidak ada hal yang mengganggu.",
     "emosi_diharapkan": "Netral",
     "diterima": true,
-    "catatan": "Cerita jelas tanpa emosi negatif dominan; jangan membuat masalah baru."
+    "catatan": "Cerita jelas tanpa salah satu dari tujuh emosi lainnya sebagai fokus; jangan membuat masalah baru."
   },
   {
     "id": "singkat-jelas",
