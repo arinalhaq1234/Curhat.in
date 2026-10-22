@@ -10,14 +10,17 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.pagination import PageNumberPagination
 
 from mutagen import MutagenError
-from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
-from mutagen.wave import WAVE
 
 from .models import RiwayatCurhat
-from .serializers import RegisterSerializer, RiwayatCurhatSerializer
+from .serializers import (
+    RegisterSerializer,
+    RiwayatCurhatSerializer,
+    RiwayatCurhatListSerializer,
+)
 from .services import InputCurhatError, analisis_audio, analisis_teks
 
 
@@ -27,12 +30,9 @@ logger = logging.getLogger(__name__)
 MAX_AUDIO_SIZE = 15_000_000      # 15 MB (desimal)
 MAX_AUDIO_DURATION = 10 * 60       # 10 menit (detik)
 
-# MIME type dari upload digunakan untuk memilih pemeriksa format nyata.
+# Hanya menerima container M4A dengan codec AAC.
+# Android/iOS dapat mengirim MIME yang berbeda untuk file .m4a.
 AUDIO_PARSERS = {
-    "audio/mpeg": MP3,
-    "audio/mp3": MP3,
-    "audio/wav": WAVE,
-    "audio/x-wav": WAVE,
     "audio/mp4": MP4,
     "audio/m4a": MP4,
     "audio/x-m4a": MP4,
@@ -43,6 +43,11 @@ def baca_durasi_audio(audio_bytes, mime_type):
     """Baca durasi audio sesungguhnya, bukan berdasarkan nama file."""
     try:
         audio = AUDIO_PARSERS[mime_type](BytesIO(audio_bytes))
+        # MP4 tidak selalu berisi AAC (contohnya bisa ALAC).
+        codec = str(getattr(audio.info, "codec", "")).lower()
+        keterangan_codec = str(getattr(audio.info, "codec_description", "")).lower()
+        if not codec.startswith("mp4a") or "aac" not in keterangan_codec:
+            raise ValueError("Codec audio harus AAC.")
         durasi = float(audio.info.length)
     except (MutagenError, OSError, ValueError, AttributeError, TypeError, EOFError) as error:
         raise ValueError("File audio rusak atau tidak dapat dibaca.") from error
@@ -218,12 +223,14 @@ def curhat_audio(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if file_audio.content_type not in AUDIO_PARSERS:
+    # Validasi ekstensi, MIME upload, lalu isi file sebenarnya di bawah.
+    mime_type = (file_audio.content_type or "").split(";")[0].strip().lower()
+    if not file_audio.name.lower().endswith(".m4a") or mime_type not in AUDIO_PARSERS:
         return Response(
             {
                 "success": False,
-                "message": "Format file audio tidak didukung.",
-                "format_diterima": ["MP3", "WAV", "M4A"],
+                "message": "Format audio harus M4A dengan codec AAC.",
+                "format_diterima": ["M4A"],
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -251,13 +258,13 @@ def curhat_audio(request):
     audio_bytes = file_audio.read()
     try:
         durasi_audio = baca_durasi_audio(
-            audio_bytes, file_audio.content_type
+            audio_bytes, mime_type
         )
     except ValueError:
         return Response(
             {
                 "success": False,
-                "message": "File audio rusak atau tidak dapat dibaca.",
+                "message": "File audio tidak valid. Gunakan M4A dengan codec AAC.",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -274,7 +281,8 @@ def curhat_audio(request):
     try:
         hasil_ai = analisis_audio(
             audio_bytes=audio_bytes,
-            mime_type=file_audio.content_type
+            # MIME baku yang didukung Gemini untuk M4A.
+            mime_type="audio/m4a"
         )
 
         if hasil_ai.get("valid") is False:
@@ -487,6 +495,109 @@ def admin_check(request):
                 "is_staff": request.user.is_staff,
                 "is_superuser": request.user.is_superuser,
             }
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+# =========================================================
+# PAGINATION DAFTAR RIWAYAT (BE-005)
+# =========================================================
+
+class RiwayatCurhatPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
+# =========================================================
+# API DAFTAR RIWAYAT CURHAT
+# =========================================================
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def curhat_history(request):
+
+    # Hanya mengambil curhat milik pengguna yang login.
+    # Kolom audio_file tidak diambil agar respons lebih ringan.
+    riwayat = (
+        RiwayatCurhat.objects
+        .filter(user=request.user)
+        .only(
+            "id",
+            "user_id",
+            "audio_name",
+            "emosi",
+            "ringkasan_cerita",
+            "waktu",
+        )
+        .order_by("-waktu", "-id")
+    )
+
+    # Membagi hasil menjadi beberapa halaman.
+    paginator = RiwayatCurhatPagination()
+    halaman = paginator.paginate_queryset(riwayat, request)
+
+    # Mengubah hasil database menjadi JSON ringkas.
+    serializer = RiwayatCurhatListSerializer(
+        halaman,
+        many=True
+    )
+
+    return Response(
+        {
+            "success": True,
+            "message": "Daftar riwayat berhasil diambil.",
+            "data": {
+                "count": paginator.page.paginator.count,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
+                "results": serializer.data,
+            },
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+# =========================================================
+# API DETAIL RIWAYAT CURHAT
+# =========================================================
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def curhat_history_detail(request, curhat_id):
+
+    # Hanya mencari curhat milik pengguna yang sedang login.
+    # Audio biner tidak diambil karena serializer detail
+    # hanya mengembalikan data curhat dan hasil analisis.
+    riwayat = (
+        RiwayatCurhat.objects
+        .filter(
+            id=curhat_id,
+            user=request.user
+        )
+        .defer("audio_file")
+        .first()
+    )
+
+    # ID tidak ditemukan atau bukan milik pengguna.
+    if riwayat is None:
+        return Response(
+            {
+                "success": False,
+                "message": "Riwayat curhat tidak ditemukan."
+            },
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Mengambil hasil yang sudah tersimpan di database.
+    serializer = RiwayatCurhatSerializer(riwayat)
+
+    return Response(
+        {
+            "success": True,
+            "message": "Detail riwayat berhasil diambil.",
+            "data": serializer.data
         },
         status=status.HTTP_200_OK
     )

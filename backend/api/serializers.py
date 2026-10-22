@@ -1,3 +1,4 @@
+
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -8,7 +9,7 @@ from .models import RiwayatCurhat
 
 
 # =========================================================
-# SERIALIZER RIWAYAT CURHAT
+# SERIALIZER DETAIL RIWAYAT CURHAT (BE-004 / BE-005)
 # =========================================================
 
 class RiwayatCurhatSerializer(serializers.ModelSerializer):
@@ -44,7 +45,45 @@ class RiwayatCurhatSerializer(serializers.ModelSerializer):
 
 
 # =========================================================
-# SERIALIZER REGISTRASI PENGGUNA
+# SERIALIZER DAFTAR RIWAYAT CURHAT (BE-005)
+# =========================================================
+
+class RiwayatCurhatListSerializer(serializers.ModelSerializer):
+
+    jenis = serializers.SerializerMethodField()
+
+    waktu = serializers.DateTimeField(
+        format="%d-%m-%Y %H:%M:%S",
+        read_only=True
+    )
+
+    class Meta:
+        model = RiwayatCurhat
+
+        fields = [
+            "id",
+            "jenis",
+            "emosi",
+            "ringkasan_cerita",
+            "audio_name",
+            "waktu",
+        ]
+
+        read_only_fields = fields
+
+    def get_jenis(self, obj):
+        """
+        Menentukan jenis curhat berdasarkan data tersimpan.
+        """
+
+        if obj.audio_name:
+            return "audio"
+
+        return "teks"
+
+
+# =========================================================
+# SERIALIZER REGISTRASI PENGGUNA (BE-003)
 # =========================================================
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -96,8 +135,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Membuat pengguna dan menyimpan password
-        menggunakan hashing bawaan Django.
+        Membuat pengguna dengan password yang di-hash Django.
         """
 
         user = User.objects.create_user(
