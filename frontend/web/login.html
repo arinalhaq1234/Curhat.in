@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login Admin | Curhat.in</title>
+
+    <link rel="icon" type="image/png" href="./assets/curhatin-logo.png">
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body class="login-page">
+
+    <main class="login-container">
+        <div class="login-card">
+
+            <!-- Logo Curhat.in -->
+            <div class="login-brand">
+                <img
+                    src="./assets/curhatin-logo.png"
+                    alt="Logo Curhat.in"
+                    class="brand-logo"
+                    width="180"
+                >
+                <p>Dashboard Monitoring Admin</p>
+            </div>
+
+            <!-- Judul Login -->
+            <div class="login-heading">
+                <h1>Selamat Datang!</h1>
+                <p>Masuk menggunakan akun admin untuk mengakses dashboard monitoring.</p>
+            </div>
+
+            <!-- Form Login -->
+            <form id="login-form">
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Masukkan username"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Masukkan password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <!-- Autentikasi backend belum diaktifkan -->
+                <button type="button" class="btn-login" disabled>
+                    Masuk
+                </button>
+
+            </form>
+
+            <p class="login-note">
+                Tampilan login sedang dikembangkan.
+                Autentikasi admin belum diaktifkan.
+            </p>
+
+        </div>
+    </main>
+
+</body>
+</html>

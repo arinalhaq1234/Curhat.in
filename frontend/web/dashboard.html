@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Admin | Curhat.in</title>
+
+    <link rel="icon" type="image/png"
+          href="./assets/curhatin-logo.png">
+
+    <link rel="stylesheet" href="./css/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
+    <script src="./js/config.js" defer></script>
+</head>
+
+<body class="dashboard-page">
+
+    <div class="dashboard-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="dashboard-sidebar">
+
+            <div class="sidebar-brand">
+                <img
+                    src="./assets/curhatin-logo.png"
+                    alt="Logo Curhat.in"
+                    class="sidebar-logo"
+                >
+                <p>Admin Monitoring</p>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Navigasi dashboard">
+                <a href="#ringkasan" class="nav-link active">
+                    Dashboard
+                </a>
+
+                <a href="#aktivitas" class="nav-link">
+                    Aktivitas Harian
+                </a>
+
+                <a href="#distribusi" class="nav-link">
+                    Distribusi Emosi
+                </a>
+
+                <a href="#tren" class="nav-link">
+                    Tren Waktu
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Curhat.in Admin Panel</p>
+                
+            </div>
+
+        </aside>
+
+        <!-- KONTEN UTAMA -->
+        <div class="dashboard-main">
+
+            <!-- HEADER -->
+            <header class="dashboard-topbar">
+                <div>
+                    <p class="dashboard-subtitle">
+                        Monitoring Sistem
+                    </p>
+
+                    <h1>Dashboard Admin</h1>
+
+                    <p>
+                        Pantau aktivitas penggunaan Curhat.in.
+                    </p>
+                </div>
+
+                <!-- FILTER PERIODE -->
+                <div class="period-filter">
+                    <label for="filter-periode">
+                        Periode
+                    </label>
+
+                    <select id="filter-periode" disabled>
+                        <option value="7">7 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                        <option value="90">90 Hari Terakhir</option>
+                    </select>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+
+                <!-- RINGKASAN STATISTIK -->
+                <section id="ringkasan" class="dashboard-section">
+
+                    <div class="section-heading">
+                        <h2>Ringkasan Statistik</h2>
+                        <p>Gambaran umum penggunaan aplikasi.</p>
+                    </div>
+
+                    <div class="stats-grid">
+
+                        <article class="stat-card">
+                            <h3>Jumlah Pengguna</h3>
+                            <p class="stat-value">—</p>
+                            <p class="stat-description">
+                                Total akun terdaftar
+                            </p>
+                        </article>
+
+                        <article class="stat-card">
+                            <h3>Jumlah Curhat</h3>
+                            <p class="stat-value">—</p>
+                            <p class="stat-description">
+                                Total curhatan pengguna
+                            </p>
+                        </article>
+
+                        <article class="stat-card" id="aktivitas">
+                            <h3>Aktivitas Harian</h3>
+                            <p class="stat-value">—</p>
+                            <p class="stat-description">
+                                Curhatan pada hari ini
+                            </p>
+                        </article>
+
+                    </div>
+                </section>
+
+                <!-- AREA GRAFIK -->
+                <div class="charts-grid">
+
+                    <section id="distribusi" class="chart-card">
+                        <div class="section-heading">
+                            <h2>Distribusi Emosi</h2>
+                            <p>Proporsi kategori emosi pengguna.</p>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="emotion-chart"
+                                aria-label="Grafik distribusi emosi"
+                                role="img">
+                            </canvas>
+                        </div>
+                    </section>
+
+                    <section id="tren" class="chart-card">
+                        <div class="section-heading">
+                            <h2>Tren Waktu</h2>
+                            <p>Perkembangan jumlah curhatan.</p>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="trend-chart"
+                                aria-label="Grafik tren curhatan"
+                                role="img">
+                            </canvas>
+                        </div>
+                    </section>
+
+                </div>
+
+            </main>
+
+            <footer class="dashboard-footer">
+                <p>Curhat.in — Dashboard Monitoring Admin</p>
+            </footer>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
+
