@@ -12,7 +12,7 @@ from google.genai import types
 
 # Pertahankan model proyek. Client baru dibuat saat analisis sungguhan diminta,
 # sehingga health-check dan tes tidak membutuhkan API key.
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "gemini-3.8-flash"
 client = None
 
 KATEGORI_EMOSI = {

@@ -180,6 +180,10 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
 
     form = RiwayatCurhatAdminForm
 
+    def get_queryset(self, request):
+        # Daftar admin hanya membutuhkan metadata, bukan seluruh isi rekaman.
+        return super().get_queryset(request).defer("audio_file")
+
     # Hasil AI tidak boleh diedit manual
     readonly_fields = (
         "audio_name",
