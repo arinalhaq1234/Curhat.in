@@ -626,3 +626,155 @@ body.dashboard-page {
         width: 100%;
     }
 }
+
+/* Filter tanggal dashboard */
+.period-filter input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #e4d8f2;
+    border-radius: 10px;
+    background: white;
+    color: #40206f;
+}
+
+.period-filter label {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+.period-filter button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: #8164c7;
+    color: white;
+}
+
+.period-filter button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* Perapian header dan filter tanggal */
+.dashboard-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.period-filter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+    width: 360px;
+    max-width: 100%;
+    flex-shrink: 0;
+}
+
+.period-filter label[for="filter-start"] {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+}
+
+#filter-start {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.period-filter label[for="filter-end"] {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+}
+
+#filter-end {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.period-filter button {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-topbar {
+        flex-direction: column;
+    }
+
+    .period-filter {
+        width: 100%;
+        max-width: 360px;
+    }
+}
+
+
+/* Perbaikan responsif dashboard untuk HP */
+@media (max-width: 700px) {
+
+    .dashboard-topbar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .period-filter {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .period-filter label[for="filter-start"],
+    .period-filter label[for="filter-end"],
+    .period-filter #filter-start,
+    .period-filter #filter-end,
+    .period-filter button {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .sidebar-nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .sidebar-nav .nav-link {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-main,
+    .dashboard-content,
+    .chart-card {
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    #dashboard-message {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
