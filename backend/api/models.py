@@ -2,6 +2,14 @@ from django.conf import settings
 from django.db import models
 
 
+class GoogleIdentity(models.Model):
+    """Identitas penyedia; email tidak pernah dipakai untuk menautkan akun lama."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(max_length=254, unique=True)
+
+
 class RiwayatCurhat(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,8 +1,10 @@
 from django.urls import path
 from . import views
+from .google_login import google_login
 
 
 urlpatterns = [
+    path("auth/google/", google_login, name="google-login"),
     path("health/", views.health_check, name="health-check"),
     path("curhat/text/", views.curhat_text, name="curhat-text"),
     path("curhat/audio/", views.curhat_audio, name="curhat-audio"),
