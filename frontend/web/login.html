@@ -33,7 +33,7 @@
             </div>
 
             <!-- Form Login -->
-            <form id="login-form">
+            <form id="login-form" novalidate>
 
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -59,20 +59,26 @@
                     >
                 </div>
 
-                <!-- Autentikasi backend belum diaktifkan -->
-                <button type="button" class="btn-login" disabled>
+                <!-- Status login dan validasi form -->
+                <button type="submit" class="btn-login" id="login-button">
                     Masuk
                 </button>
 
+            <p id="login-message" role="status" aria-live="polite"></p>
             </form>
 
             <p class="login-note">
-                Tampilan login sedang dikembangkan.
-                Autentikasi admin belum diaktifkan.
+                Halaman login admin Curhat.in.
+                Integrasi autentikasi backend akan dilakukan pada tahap berikutnya.
             </p>
 
         </div>
     </main>
 
+    <script src="./js/login.js" defer></script>
+    <script src="./js/login.js" defer></script>
 </body>
 </html>
+
+
+
