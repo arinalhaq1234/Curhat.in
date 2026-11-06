@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Distribusi Emosi | Curhat.in</title>
+
+    <link rel="icon" type="image/png"
+          href="./assets/curhatin-logo.png">
+
+    <link rel="stylesheet" href="./css/style.css?v=logo2">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
+    <script src="./js/config.js" defer></script>
+    <script src="./js/emosi.js?v=8" defer></script>
+</head>
+
+<body class="dashboard-page">
+
+    <div class="dashboard-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="dashboard-sidebar">
+
+            <div class="sidebar-brand">
+                <img
+                    src="./assets/curhatin-logo.png?v=logo2"
+                    alt="Logo Curhat.in"
+                    class="sidebar-logo"
+                >
+                <p>Admin Monitoring</p>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Navigasi dashboard">
+    <a href="./dashboard.html" class="nav-link">Dashboard</a>
+    <a href="./aktivitas.html" class="nav-link">Aktivitas Harian</a>
+    <a href="./emosi.html" class="nav-link active">Distribusi Emosi</a>
+    <a href="./tren.html" class="nav-link">Tren Waktu</a>
+</nav>
+
+            <div class="sidebar-footer">
+                <p>Curhat.in Admin Panel</p>
+                
+            </div>
+
+        </aside>
+
+        <!-- KONTEN UTAMA -->
+        <div class="dashboard-main">
+
+            <!-- HEADER -->
+            <header class="dashboard-topbar">
+                <div>
+                    <p class="dashboard-subtitle">
+                        Monitoring Sistem
+                    </p>
+
+                    <h1>Distribusi Emosi</h1>
+
+                    <p>
+                        Pantau distribusi delapan kategori emosi pengguna.
+                    </p>
+                </div>
+
+                </header>
+
+            <main class="dashboard-content">
+
+    <p id="dashboard-message" role="status">
+        Memuat distribusi emosi...
+    </p>
+
+    <section class="chart-card">
+        <div class="section-heading">
+            <h2>Grafik Distribusi Emosi</h2>
+            <p>Proporsi delapan kategori emosi berdasarkan data contoh.</p>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="emotion-chart"
+                aria-label="Grafik distribusi delapan emosi"
+                role="img"></canvas>
+        </div>
+    </section>
+
+    <section class="dashboard-section" style="margin-top:28px;">
+        <div class="section-heading">
+            <h2>Rincian Kategori Emosi</h2>
+            <p>Jumlah dan persentase setiap kategori.</p>
+        </div>
+
+        <div id="emotion-summary" class="stats-grid"></div>
+    </section>
+
+</main>
+
+            <footer class="dashboard-footer">
+                <p>Curhat.in — Dashboard Monitoring Admin</p>
+            </footer>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

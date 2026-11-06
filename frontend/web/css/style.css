@@ -1,4 +1,4 @@
-
+﻿
 /* ========================================
    CURHAT.IN - ADMIN DASHBOARD
    WEB-001 Tahap 1: Setup Tampilan Dasar
@@ -271,9 +271,9 @@ body.dashboard-page {
     max-width: 100%;
     height: auto;
     margin: 0 auto 12px;
-    background: #ffffff;
-    padding: 10px;
-    border-radius: 18px;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
 }
 
 .sidebar-brand p {
@@ -777,4 +777,92 @@ body.dashboard-page {
         overflow-wrap: anywhere;
     }
 }
+
+
+/* Logo Curhat.in tanpa kotak putih tambahan */
+.sidebar-logo,
+.sidebar-brand img {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    object-fit: contain;
+}
+
+
+
+/* ==========================================
+   REVISI WEB-001 - TEMA CURHAT.IN MOBILE
+========================================== */
+
+:root {
+    --curhat-bg: #f8f5fc;
+    --curhat-purple: #8b70c2;
+    --curhat-purple-dark: #6f54a4;
+    --curhat-pink: #ee9dbf;
+    --curhat-text: #40364e;
+    --curhat-muted: #89818f;
+    --curhat-border: #eee7f3;
+}
+
+body.dashboard-page {
+    background: var(--curhat-bg);
+    color: var(--curhat-text);
+}
+
+.dashboard-sidebar {
+    background: linear-gradient(
+        170deg,
+        #44207f 0%,
+        #7046b5 65%,
+        #9463c8 100%
+    );
+}
+
+.dashboard-page .dashboard-topbar h1,
+.dashboard-page .section-heading h2 {
+    color: var(--curhat-text);
+}
+
+.dashboard-page .dashboard-topbar .dashboard-subtitle {
+    color: var(--curhat-purple);
+}
+
+.stat-card,
+.dashboard-page section.chart-card {
+    background: #ffffff;
+    border: 1px solid var(--curhat-border);
+    border-radius: 24px;
+    box-shadow: 0 5px 16px rgba(88, 65, 112, 0.06);
+}
+
+.stat-card {
+    border-top: 4px solid var(--curhat-purple);
+}
+
+.stat-card:nth-child(2) {
+    border-top-color: var(--curhat-pink);
+}
+
+.stat-card:nth-child(3) {
+    border-top-color: #baa5e4;
+}
+
+.stat-value {
+    color: var(--curhat-purple-dark);
+}
+
+.period-filter button {
+    background: var(--curhat-purple);
+}
+
+.sidebar-logo {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
 

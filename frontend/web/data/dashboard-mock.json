@@ -1,31 +1,98 @@
 ﻿{
-  "jumlah_pengguna": 120,
-  "jumlah_curhat": 245,
-  "aktivitas_harian": [
-    {"tanggal": "2026-10-16", "jumlah": 12},
-    {"tanggal": "2026-10-17", "jumlah": 17},
-    {"tanggal": "2026-10-18", "jumlah": 22},
-    {"tanggal": "2026-10-19", "jumlah": 15},
-    {"tanggal": "2026-10-20", "jumlah": 20},
-    {"tanggal": "2026-10-21", "jumlah": 26},
-    {"tanggal": "2026-10-22", "jumlah": 31}
-  ],
-  "distribusi_emosi": [
-    {"kategori": "cemas", "jumlah": 35},
-    {"kategori": "sedih", "jumlah": 28},
-    {"kategori": "takut", "jumlah": 20},
-    {"kategori": "marah", "jumlah": 17},
-    {"kategori": "tertekan", "jumlah": 19},
-    {"kategori": "kesepian", "jumlah": 15},
-    {"kategori": "netral", "jumlah": 9}
-  ],
-  "tren_penggunaan": [
-    {"tanggal": "2026-10-16", "jumlah_curhat": 12},
-    {"tanggal": "2026-10-17", "jumlah_curhat": 17},
-    {"tanggal": "2026-10-18", "jumlah_curhat": 22},
-    {"tanggal": "2026-10-19", "jumlah_curhat": 15},
-    {"tanggal": "2026-10-20", "jumlah_curhat": 20},
-    {"tanggal": "2026-10-21", "jumlah_curhat": 26},
-    {"tanggal": "2026-10-22", "jumlah_curhat": 31}
-  ]
+    "jumlah_pengguna":  120,
+    "jumlah_curhat":  245,
+    "aktivitas_harian":  [
+                             {
+                                 "tanggal":  "2026-10-16",
+                                 "jumlah":  12
+                             },
+                             {
+                                 "tanggal":  "2026-10-17",
+                                 "jumlah":  17
+                             },
+                             {
+                                 "tanggal":  "2026-10-18",
+                                 "jumlah":  22
+                             },
+                             {
+                                 "tanggal":  "2026-10-19",
+                                 "jumlah":  15
+                             },
+                             {
+                                 "tanggal":  "2026-10-20",
+                                 "jumlah":  20
+                             },
+                             {
+                                 "tanggal":  "2026-10-21",
+                                 "jumlah":  26
+                             },
+                             {
+                                 "tanggal":  "2026-10-22",
+                                 "jumlah":  31
+                             }
+                         ],
+    "distribusi_emosi":  [
+                             {
+                                 "kategori":  "cemas",
+                                 "jumlah":  35
+                             },
+                             {
+                                 "kategori":  "sedih",
+                                 "jumlah":  28
+                             },
+                             {
+                                 "kategori":  "takut",
+                                 "jumlah":  20
+                             },
+                             {
+                                 "kategori":  "marah",
+                                 "jumlah":  17
+                             },
+                             {
+                                 "kategori":  "tertekan",
+                                 "jumlah":  19
+                             },
+                             {
+                                 "kategori":  "kesepian",
+                                 "jumlah":  15
+                             },
+                             {
+                                 "kategori":  "netral",
+                                 "jumlah":  9
+                             },
+                             {
+                                 "kategori":  "bahagia",
+                                 "jumlah":  24
+                             }
+                         ],
+    "tren_penggunaan":  [
+                            {
+                                "tanggal":  "2026-10-16",
+                                "jumlah_curhat":  12
+                            },
+                            {
+                                "tanggal":  "2026-10-17",
+                                "jumlah_curhat":  17
+                            },
+                            {
+                                "tanggal":  "2026-10-18",
+                                "jumlah_curhat":  22
+                            },
+                            {
+                                "tanggal":  "2026-10-19",
+                                "jumlah_curhat":  15
+                            },
+                            {
+                                "tanggal":  "2026-10-20",
+                                "jumlah_curhat":  20
+                            },
+                            {
+                                "tanggal":  "2026-10-21",
+                                "jumlah_curhat":  26
+                            },
+                            {
+                                "tanggal":  "2026-10-22",
+                                "jumlah_curhat":  31
+                            }
+                        ]
 }
