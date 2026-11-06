@@ -1,12 +1,14 @@
-﻿const loginForm = document.getElementById("login-form");
+﻿"use strict";
+
+const form = document.getElementById("login-form");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const loginButton = document.getElementById("login-button");
-const loginMessage = document.getElementById("login-message");
+const message = document.getElementById("login-message");
 
-function showMessage(text, isError = false) {
-    loginMessage.textContent = text;
-    loginMessage.style.color = isError ? "#B42318" : "#5B3D91";
+function showMessage(text, error = false) {
+    message.textContent = text;
+    message.style.color = error ? "#B42318" : "#5B3D91";
 }
 
 function setLoading(loading) {
@@ -14,10 +16,10 @@ function setLoading(loading) {
     usernameInput.disabled = loading;
     passwordInput.disabled = loading;
     loginButton.textContent = loading ? "Memproses..." : "Masuk";
-    loginForm.setAttribute("aria-busy", String(loading));
+    form.setAttribute("aria-busy", String(loading));
 }
 
-loginForm.addEventListener("submit", async (event) => {
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const username = usernameInput.value.trim();
@@ -37,19 +39,70 @@ loginForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    // Simulasi status request untuk pengujian Tahap 1.
-    // Tidak ada kredensial yang dikirim atau disimpan.
     setLoading(true);
 
     try {
-        await new Promise(resolve => setTimeout(resolve, 600));
+        const baseURL = window.CURHAT_CONFIG.API_BASE_URL;
 
-        showMessage(
-            "Form valid. Koneksi autentikasi backend belum diaktifkan."
+        const response = await fetch(baseURL + "auth/login/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Username atau password salah."
+            );
+        }
+
+        const access = result.data?.access;
+        const refresh = result.data?.refresh;
+
+        if (!access || !refresh) {
+            throw new Error("Token login tidak tersedia.");
+        }
+
+        // Jangan percaya role dari frontend saja.
+        // Verifikasi langsung melalui endpoint yang hanya mengizinkan admin.
+        const adminResponse = await fetch(
+            baseURL + "auth/admin-check/",
+            {
+                headers: {
+                    "Authorization": "Bearer " + access
+                }
+            }
         );
+
+        if (!adminResponse.ok) {
+            if (adminResponse.status === 403) {
+                throw new Error(
+                    "Akun ini tidak memiliki akses admin."
+                );
+            }
+
+            throw new Error(
+                "Verifikasi hak akses admin gagal."
+            );
+        }
+
+        sessionStorage.setItem("curhat_admin_access", access);
+        sessionStorage.setItem("curhat_admin_refresh", refresh);
+
+        passwordInput.value = "";
+        showMessage("Login berhasil. Mengarahkan ke dashboard...");
+
+        window.location.replace("./dashboard.html");
+
     } catch (error) {
         showMessage(
-            "Terjadi kesalahan. Silakan coba lagi.",
+            error instanceof TypeError
+                ? "Tidak dapat terhubung ke backend. Periksa server Django."
+                : error.message,
             true
         );
     } finally {

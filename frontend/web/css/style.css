@@ -301,7 +301,7 @@ body.dashboard-page {
 
 .nav-link:hover,
 .nav-link:focus-visible {
-    background: rgba(255, 255, 255, 0.18);
+    background: transparent;
 }
 
 .nav-link.active {
@@ -865,4 +865,31 @@ body.dashboard-page {
     border-radius: 0 !important;
 }
 
+
+
+/* WEB-002: Tombol Keluar pada sidebar */
+.sidebar-logout {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-logout:hover {
+    background: #ffffff;
+    color: #5b33b6;
+}
+
+.sidebar-logout:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
 
