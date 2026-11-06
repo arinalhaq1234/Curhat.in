@@ -1,7 +1,9 @@
 import { getAccessToken } from '@/services/session';
+import { ApiError, getCurhatHistory, getCurhatHistoryDetail } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,28 +13,123 @@ import {
   View,
 } from 'react-native';
 
+type LatestHistory = {
+  id: number;
+  ringkasan_cerita: string | null;
+  emosi: string | null;
+  waktu: string;
+};
+
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [checkingSession, setCheckingSession] = useState(true);
+  const [latestHistory, setLatestHistory] = useState<LatestHistory | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState('');
+  const [openingHistory, setOpeningHistory] = useState(false);
+  const requestIdRef = useRef(0);
+  const openingRef = useRef(false);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const accessToken = await getAccessToken();
+  const loadLatestHistory = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    setHistoryLoading(true);
+    setHistoryError('');
+    setLatestHistory(null);
+    setOpeningHistory(false);
+    openingRef.current = false;
+    let hasSession = false;
 
-        if (!accessToken) {
-          router.replace('/login');
-          return;
-        }
-
-        setCheckingSession(false);
-      } catch (error) {
-        console.log('Gagal memeriksa sesi:', error);
+    try {
+      const accessToken = await getAccessToken();
+      if (requestId !== requestIdRef.current) return;
+      if (!accessToken) {
         router.replace('/login');
+        return;
       }
-    };
+      hasSession = true;
+      setCheckingSession(false);
 
-    checkSession();
+      const response = await getCurhatHistory(accessToken);
+      if (requestId !== requestIdRef.current) return;
+      if (response?.success !== true || !Array.isArray(response.data?.results)) {
+        throw new Error('Daftar riwayat dari server tidak valid.');
+      }
+      const latest = response.data.results[0] as LatestHistory | undefined;
+      if (latest && (!Number.isInteger(latest.id) || latest.id <= 0)) {
+        throw new Error('Data riwayat terbaru tidak valid.');
+      }
+      setLatestHistory(latest ?? null);
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+      if (!hasSession || (error instanceof ApiError && error.status === 401)) {
+        router.replace('/login');
+        return;
+      }
+      setHistoryError('Riwayat belum dapat dimuat. Ketuk untuk mencoba lagi.');
+    } finally {
+      if (requestId === requestIdRef.current) setHistoryLoading(false);
+    }
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    void loadLatestHistory();
+    return () => {
+      requestIdRef.current += 1;
+      openingRef.current = false;
+    };
+  }, [loadLatestHistory]));
+
+  const openLatestHistory = async () => {
+    if (historyLoading || openingRef.current) return;
+    if (!latestHistory) {
+      if (historyError) void loadLatestHistory();
+      else router.push('/riwayat');
+      return;
+    }
+
+    const requestId = requestIdRef.current;
+    openingRef.current = true;
+    setOpeningHistory(true);
+    setHistoryError('');
+    try {
+      const accessToken = await getAccessToken();
+      if (requestId !== requestIdRef.current) return;
+      if (!accessToken) {
+        router.replace('/login');
+        return;
+      }
+      const response = await getCurhatHistoryDetail(latestHistory.id, accessToken);
+      if (requestId !== requestIdRef.current) return;
+      if (response?.success !== true || !response.data || typeof response.data !== 'object') {
+        throw new Error('Detail riwayat dari server tidak valid.');
+      }
+      const detail = response.data;
+      router.push({
+        pathname: '/hasil',
+        params: {
+          from: 'riwayat',
+          teks: detail.teks ?? '',
+          emosi: detail.emosi ?? '',
+          ringkasan_cerita: detail.ringkasan_cerita ?? '',
+          akar_masalah: detail.akar_masalah ?? '',
+          rekomendasi: detail.rekomendasi ?? '',
+          waktu: detail.waktu ?? '',
+        },
+      });
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      setHistoryError('Hasil analisis belum dapat dibuka. Ketuk untuk mencoba lagi.');
+    } finally {
+      if (requestId === requestIdRef.current) {
+        openingRef.current = false;
+        setOpeningHistory(false);
+      }
+    }
+  };
 
   if (checkingSession) {
     return (
@@ -169,23 +266,35 @@ export default function HomeScreen() {
 
         <Pressable
           style={styles.historyCard}
-          onPress={() => router.push('/riwayat')}
+          onPress={() => void openLatestHistory()}
+          disabled={historyLoading || openingHistory}
         >
           <View style={styles.historyIcon}>
+            {historyLoading || openingHistory ? (
+              <ActivityIndicator size="small" color="#8067B7" />
+            ) : (
             <Ionicons
               name="time-outline"
               size={25}
               color="#8067B7"
             />
+            )}
           </View>
 
           <View style={styles.historyContent}>
-            <Text style={styles.historyTitle}>
-              Belum ada riwayat
+            <Text style={styles.historyTitle} numberOfLines={1}>
+              {historyLoading ? 'Memuat riwayat...'
+                : latestHistory ? latestHistory.ringkasan_cerita?.trim() || 'Curhatan terbaru'
+                : historyError ? 'Riwayat belum dapat dimuat'
+                : 'Belum ada riwayat'}
             </Text>
 
             <Text style={styles.historyDescription}>
-              Cerita yang kamu kirim akan tampil di sini.
+              {historyLoading ? 'Menyiapkan cerita terbarumu.'
+                : openingHistory ? 'Membuka hasil analisis...'
+                : historyError || (latestHistory
+                  ? `${latestHistory.emosi || 'Tidak diketahui'} · ${latestHistory.waktu || '-'}`
+                  : 'Cerita yang kamu kirim akan tampil di sini.')}
             </Text>
           </View>
 
@@ -196,10 +305,16 @@ export default function HomeScreen() {
           />
         </Pressable>
 
-        <View style={styles.bottomSpace} />
+        <View style={[styles.bottomSpace, { height: styles.bottomSpace.height + insets.bottom }]} />
       </ScrollView>
 
-      <View style={styles.bottomNav}>
+      <View style={[
+        styles.bottomNav,
+        {
+          height: styles.bottomNav.height + insets.bottom,
+          paddingBottom: styles.bottomNav.paddingBottom + insets.bottom,
+        },
+      ]}>
         <Pressable style={styles.navItem}>
           <Ionicons
             name="home"

@@ -1,6 +1,7 @@
 
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Pressable,
@@ -21,6 +22,7 @@ const MIN_LENGTH = 150;
 const MAX_LENGTH = 5000;
 
 export default function CurhatTextScreen() {
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -84,7 +86,23 @@ export default function CurhatTextScreen() {
         response
       );
 
-      const result = response.data ?? response;
+      const result = response?.data ?? response;
+
+      // Hanya buka hasil jika seluruh field analisis berisi teks yang valid.
+      if (
+        response?.success === false ||
+        !result ||
+        typeof result !== 'object' ||
+        Array.isArray(result) ||
+        !['emosi', 'ringkasan_cerita', 'akar_masalah', 'rekomendasi', 'waktu'].every(
+          (field) => typeof result[field] === 'string' && result[field].trim().length > 0
+        )
+      ) {
+        setError(
+          'Hasil analisis belum tersedia atau belum lengkap. Ceritamu tetap tersimpan di halaman ini. Silakan coba lagi.'
+        );
+        return;
+      }
 
       // NAVIGASI KE HALAMAN HASIL ANALISIS
       router.push({
@@ -171,7 +189,10 @@ export default function CurhatTextScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: styles.container.paddingBottom + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >

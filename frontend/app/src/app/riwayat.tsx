@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Pressable,
@@ -204,6 +205,7 @@ function getEmotionEmoji(emotion: string) {
 }
 
 export default function RiwayatScreen() {
+  const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] =
     useState<FilterType>('Semua');
 
@@ -393,6 +395,7 @@ export default function RiwayatScreen() {
       router.push({
         pathname: '/hasil',
         params: {
+          from: 'riwayat',
           teks: detail.teks ?? '',
           emosi: detail.emosi ?? '',
           ringkasan_cerita:
@@ -658,11 +661,17 @@ export default function RiwayatScreen() {
           </>
         )}
 
-        <View style={styles.bottomSpace} />
+        <View style={[styles.bottomSpace, { height: styles.bottomSpace.height + insets.bottom }]} />
       </ScrollView>
 
       {/* BOTTOM NAV */}
-      <View style={styles.bottomNav}>
+      <View style={[
+        styles.bottomNav,
+        {
+          height: styles.bottomNav.height + insets.bottom,
+          paddingBottom: styles.bottomNav.paddingBottom + insets.bottom,
+        },
+      ]}>
         <Pressable
           style={styles.navItem}
           onPress={() =>

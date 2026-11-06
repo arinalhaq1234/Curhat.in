@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Pressable,
@@ -26,6 +27,7 @@ type ProfileData = {
 };
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -291,10 +293,16 @@ export default function ProfileScreen() {
           />
         </Pressable>
 
-        <View style={styles.bottomSpace} />
+        <View style={[styles.bottomSpace, { height: styles.bottomSpace.height + insets.bottom }]} />
       </ScrollView>
 
-      <View style={styles.bottomNav}>
+      <View style={[
+        styles.bottomNav,
+        {
+          height: styles.bottomNav.height + insets.bottom,
+          paddingBottom: styles.bottomNav.paddingBottom + insets.bottom,
+        },
+      ]}>
         <Pressable
           style={styles.navItem}
           onPress={() => router.replace('/home')}

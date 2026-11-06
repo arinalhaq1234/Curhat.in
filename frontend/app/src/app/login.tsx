@@ -4,6 +4,7 @@ import { saveSession } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +17,7 @@ import {
 } from 'react-native';
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const { notice } = useLocalSearchParams<{
     notice?: string;
   }>();
@@ -78,7 +80,10 @@ export default function LoginScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: styles.container.paddingBottom + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >

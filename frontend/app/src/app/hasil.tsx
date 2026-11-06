@@ -1,16 +1,19 @@
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRef, useState } from 'react';
 import {
   router,
   useLocalSearchParams,
 } from 'expo-router';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Membersihkan tanda Markdown ** dari respons Gemini
 const formatText = (value: string) => {
@@ -18,7 +21,26 @@ const formatText = (value: string) => {
 };
 
 export default function HasilScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const fromHistory = params.from === 'riwayat';
+  const [showCurhatChoices, setShowCurhatChoices] = useState(false);
+  const choosingCurhatRef = useRef(false);
+
+  const startCurhat = (route: '/curhat-text' | '/curhat-audio') => {
+    if (choosingCurhatRef.current) return;
+    choosingCurhatRef.current = true;
+    setShowCurhatChoices(false);
+    router.push(route);
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(fromHistory ? '/riwayat' : '/home');
+    }
+  };
 
   const emotion = String(params.emosi ?? '');
 
@@ -63,15 +85,19 @@ export default function HasilScreen() {
   };
 
   return (
+    <>
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: styles.container.paddingBottom + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {/* HEADER */}
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleBack}
         >
           <Ionicons
             name="chevron-back"
@@ -190,6 +216,13 @@ export default function HasilScreen() {
         </Text>
       </View>
 
+      <View style={styles.disclaimer}>
+        <Ionicons name="information-circle-outline" size={20} color="#8D72C3" />
+        <Text style={styles.disclaimerText}>
+          Hasil analisis ini merupakan dukungan awal untuk memahami perasaanmu, bukan diagnosis klinis atau pengganti bantuan profesional.
+        </Text>
+      </View>
+
       {/* BUTTON */}
       <View style={styles.buttonRow}>
         <Pressable
@@ -203,18 +236,78 @@ export default function HasilScreen() {
           </Text>
         </Pressable>
 
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() =>
-            router.push('/riwayat')
-          }
-        >
-          <Text style={styles.primaryButtonText}>
-            Lihat Riwayat
-          </Text>
-        </Pressable>
+        {!fromHistory && (
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() =>
+              router.push('/riwayat')
+            }
+          >
+            <Text style={styles.primaryButtonText}>
+              Lihat Riwayat
+            </Text>
+          </Pressable>
+        )}
       </View>
+      <Pressable
+        style={styles.curhatAgainButton}
+        onPress={() => {
+          choosingCurhatRef.current = false;
+          setShowCurhatChoices(true);
+        }}
+        accessibilityRole="button"
+      >
+        <Text style={styles.secondaryButtonText}>
+          {fromHistory ? 'Mulai Cerita Baru' : 'Buat Curhatan Lain'}
+        </Text>
+      </Pressable>
     </ScrollView>
+    <Modal
+      visible={showCurhatChoices}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={() => setShowCurhatChoices(false)}
+    >
+      <View style={styles.choiceOverlay}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setShowCurhatChoices(false)}
+          accessibilityLabel="Tutup pilihan curhat"
+          accessibilityRole="button"
+        />
+        <View style={styles.choiceCard} accessibilityViewIsModal>
+          <Text style={styles.choiceTitle} accessibilityRole="header">Pilih Cara Bercerita</Text>
+          <Text style={styles.choiceDescription}>Pilih cara yang paling nyaman untuk bercerita.</Text>
+          <Pressable
+            style={styles.choiceOption}
+            onPress={() => startCurhat('/curhat-text')}
+            accessibilityRole="button"
+          >
+            <Ionicons name="create-outline" size={24} color="#8067B7" />
+            <Text style={styles.choiceOptionText}>Curhat Teks</Text>
+            <Ionicons name="chevron-forward" size={18} color="#A28DBB" />
+          </Pressable>
+          <Pressable
+            style={styles.choiceOption}
+            onPress={() => startCurhat('/curhat-audio')}
+            accessibilityRole="button"
+          >
+            <Ionicons name="mic-outline" size={24} color="#8067B7" />
+            <Text style={styles.choiceOptionText}>Curhat Suara</Text>
+            <Ionicons name="chevron-forward" size={18} color="#A28DBB" />
+          </Pressable>
+          <Pressable
+            style={styles.choiceCancel}
+            onPress={() => setShowCurhatChoices(false)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.secondaryButtonText}>Batal</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -421,6 +514,93 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6F6878',
     lineHeight: 20,
+  },
+
+  disclaimer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#EEE7F7',
+    marginBottom: 20,
+  },
+
+  disclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#766987',
+    lineHeight: 19,
+  },
+
+  curhatAgainButton: {
+    minHeight: 52,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D8CDE7',
+    backgroundColor: '#EEE5FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  choiceOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(63, 56, 74, 0.35)',
+  },
+
+  choiceCard: {
+    width: '100%',
+    maxWidth: 360,
+    padding: 24,
+    borderRadius: 24,
+    backgroundColor: '#FCFAFE',
+  },
+
+  choiceTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#55416F',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
+  choiceDescription: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#817A89',
+    textAlign: 'center',
+    marginBottom: 22,
+  },
+
+  choiceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 60,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#EEE5FA',
+    marginBottom: 12,
+  },
+
+  choiceOptionText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8067B7',
+  },
+
+  choiceCancel: {
+    minHeight: 44,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   buttonRow: {

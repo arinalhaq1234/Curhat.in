@@ -2,6 +2,7 @@
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   BackHandler,
@@ -53,6 +54,7 @@ const formatAudioWarning = (message: string) => {
 };
 
 export default function CurhatAudioScreen() {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
@@ -919,7 +921,10 @@ export default function CurhatAudioScreen() {
     <>
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: styles.container.paddingBottom + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
