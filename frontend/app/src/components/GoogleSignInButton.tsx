@@ -4,10 +4,11 @@
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
-import { Ionicons } from '@expo/vector-icons';
+
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Alert,
   Pressable,
   StyleSheet,
@@ -112,7 +113,7 @@ export default function GoogleSignInButton({ disabled = false }: Props) {
         {loading ? (
           <ActivityIndicator color="#8067B7" />
         ) : (
-          <Ionicons name="logo-google" size={21} color="#4285F4" />
+          <Image source={require("../assets/google-logo.png")} style={styles.googleLogo} resizeMode="contain" />
         )}
 
         <Text style={styles.buttonText}>
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   button: {
     height: 52,
     borderWidth: 1,
-    borderColor: '#DCCFEC',
+    borderColor: '#747775',
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
@@ -144,8 +145,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
+  googleLogo: {
+    width: 22,
+    height: 22,
+  },
   buttonText: {
-    color: '#514A5B',
+    color: '#1F1F1F',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -153,3 +158,4 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+
