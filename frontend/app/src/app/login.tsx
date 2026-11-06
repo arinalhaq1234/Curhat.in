@@ -1,3 +1,4 @@
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 import { loginUser } from '@/services/api';
 import { saveSession } from '@/services/session';
@@ -224,6 +225,8 @@ export default function LoginScreen() {
             </Text>
           )}
         </Pressable>
+
+        <GoogleSignInButton disabled={loading} />
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>

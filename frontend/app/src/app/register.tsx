@@ -1,3 +1,4 @@
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 import { registerUser } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -336,6 +337,8 @@ export default function RegisterScreen() {
         </Pressable>
 
         {/* LINK LOGIN */}
+        <GoogleSignInButton disabled={loading} />
+
         <View style={styles.loginRow}>
           <Text style={styles.loginText}>
             Sudah punya akun?
