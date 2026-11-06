@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -149,7 +150,7 @@ function mapHistoryItem(
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) {
-      return 'Sesi kamu telah berakhir. Silakan login kembali.';
+      return 'Sesi kamu telah berakhir. Silakan masuk kembali.';
     }
 
     if (error.status === 403) {
@@ -214,6 +215,8 @@ export default function RiwayatScreen() {
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [failedPage, setFailedPage] = useState<number | null>(null);
   const [openingId, setOpeningId] =
     useState<number | null>(null);
 
@@ -227,6 +230,7 @@ export default function RiwayatScreen() {
   const requestIdRef = useRef(0);
   const openingRef = useRef(false);
   const loadingMoreRef = useRef(false);
+  const firstPageLoadingRef = useRef(false);
 
   const redirectToLogin = useCallback(() => {
     router.replace('/login');
@@ -234,21 +238,29 @@ export default function RiwayatScreen() {
 
   // Mengambil daftar riwayat dari backend
   const loadHistory = useCallback(
-    async (requestedPage = 1) => {
+    async (requestedPage = 1, isRefresh = false) => {
+      if (firstPageLoadingRef.current ||
+          (requestedPage !== 1 && loadingMoreRef.current)) return;
       const requestId = ++requestIdRef.current;
       const isFirstPage = requestedPage === 1;
 
       if (isFirstPage) {
-        setLoading(true);
-        setError('');
-        setErrorSource(null);
+        firstPageLoadingRef.current = true;
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+        setRefreshing(isRefresh);
+        setLoading(!isRefresh);
       } else {
         loadingMoreRef.current = true;
         setLoadingMore(true);
       }
+      setError('');
+      setErrorSource(null);
+      setFailedPage(null);
 
       try {
         const token = await getAccessToken();
+        if (requestId !== requestIdRef.current) return;
 
         if (!token) {
           redirectToLogin();
@@ -291,7 +303,11 @@ export default function RiwayatScreen() {
           );
 
           const newItems = mapped.filter(
-            (item) => !existingIds.has(item.id)
+            (item) => {
+              if (existingIds.has(item.id)) return false;
+              existingIds.add(item.id);
+              return true;
+            }
           );
 
           return [...previous, ...newItems];
@@ -316,11 +332,14 @@ export default function RiwayatScreen() {
 
         setError(getErrorMessage(caughtError));
         setErrorSource('list');
+        setFailedPage(requestedPage);
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false);
           setLoadingMore(false);
+          setRefreshing(false);
           loadingMoreRef.current = false;
+          firstPageLoadingRef.current = false;
         }
       }
     },
@@ -335,6 +354,7 @@ export default function RiwayatScreen() {
       return () => {
         requestIdRef.current += 1;
         loadingMoreRef.current = false;
+        firstPageLoadingRef.current = false;
       };
     }, [loadHistory])
   );
@@ -343,6 +363,9 @@ export default function RiwayatScreen() {
   const handleLoadMore = async () => {
     if (
       loading ||
+      refreshing ||
+      firstPageLoadingRef.current ||
+      failedPage === 1 ||
       loadingMoreRef.current ||
       !hasNext
     ) {
@@ -396,6 +419,7 @@ export default function RiwayatScreen() {
         pathname: '/hasil',
         params: {
           from: 'riwayat',
+          audio_name: detail.audio_name ?? '',
           teks: detail.teks ?? '',
           emosi: detail.emosi ?? '',
           ringkasan_cerita:
@@ -436,6 +460,14 @@ export default function RiwayatScreen() {
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { void loadHistory(1, true); }}
+            colors={['#8067B7']}
+            tintColor="#8067B7"
+          />
+        }
       >
         {/* HEADER */}
         <View style={styles.header}>
@@ -494,7 +526,7 @@ export default function RiwayatScreen() {
             <Pressable
               onPress={() => {
                 if (errorSource === 'list') {
-                  loadHistory(page);
+                  void loadHistory(failedPage ?? 1);
                 } else {
                   setError('');
                   setErrorSource(null);
@@ -644,7 +676,7 @@ export default function RiwayatScreen() {
               <Pressable
                 style={styles.loadMoreButton}
                 onPress={handleLoadMore}
-                disabled={loadingMore}
+                disabled={loadingMore || refreshing || failedPage === 1}
               >
                 {loadingMore ? (
                   <ActivityIndicator

@@ -24,6 +24,8 @@ export default function HasilScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const fromHistory = params.from === 'riwayat';
+  const ceritaAsli = typeof params.teks === 'string' ? params.teks : '';
+  const fromAudio = typeof params.audio_name === 'string' && params.audio_name.trim().length > 0;
   const [showCurhatChoices, setShowCurhatChoices] = useState(false);
   const choosingCurhatRef = useRef(false);
 
@@ -149,6 +151,26 @@ export default function HasilScreen() {
           </View>
         </View>
       </View>
+
+      {fromHistory && (
+        <View style={styles.card}>
+          <View style={styles.cardIconBlue}>
+            <Ionicons
+              name="document-text-outline"
+              size={21}
+              color="#6675CD"
+            />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Cerita Kamu</Text>
+            <Text style={styles.cardText}>
+              {ceritaAsli.trim() ? ceritaAsli : fromAudio
+                ? 'Cerita ini dikirim melalui rekaman suara.'
+                : 'Isi cerita belum tersedia.'}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* RINGKASAN CERITA */}
       <View style={styles.card}>

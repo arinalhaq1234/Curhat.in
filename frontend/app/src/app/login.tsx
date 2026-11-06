@@ -35,7 +35,7 @@ export default function LoginScreen() {
     setError('');
 
     if (!username.trim() || !password.trim()) {
-      setError('Username dan password wajib diisi.');
+      setError('Nama pengguna dan kata sandi wajib diisi.');
       return;
     }
 
@@ -57,7 +57,7 @@ export default function LoginScreen() {
 
       if (!accessToken || !refreshToken) {
         throw new Error(
-          'Token login tidak ditemukan pada respons backend.'
+          'Sesi masuk belum tersedia. Silakan coba lagi.'
         );
       }
 
@@ -71,7 +71,7 @@ export default function LoginScreen() {
       setError(
         error instanceof Error
           ? error.message
-          : 'Login gagal. Silakan coba lagi.'
+          : 'Masuk gagal. Silakan coba lagi.'
       );
     } finally {
       setLoading(false);
@@ -139,7 +139,7 @@ export default function LoginScreen() {
         )}
 
         <Text style={styles.label}>
-          Username
+          Nama pengguna
         </Text>
 
         <View style={styles.inputContainer}>
@@ -152,7 +152,7 @@ export default function LoginScreen() {
           <TextInput
             value={username}
             onChangeText={setUsername}
-            placeholder="Masukkan username"
+            placeholder="Masukkan nama pengguna"
             placeholderTextColor="#A6A0B3"
             autoCapitalize="none"
             autoCorrect={false}
@@ -162,7 +162,7 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.label}>
-          Password
+          Kata sandi
         </Text>
 
         <View style={styles.inputContainer}>
@@ -175,7 +175,7 @@ export default function LoginScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Masukkan password"
+            placeholder="Masukkan kata sandi"
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showPassword}
             editable={!loading}

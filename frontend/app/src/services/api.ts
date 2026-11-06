@@ -27,12 +27,12 @@ export async function apiRequest(
   const data = await response.json();
 
   if (!response.ok) {
-    let message = "Terjadi kesalahan pada request.";
+    let message = "Terjadi kesalahan saat memproses permintaan.";
 
     if (data.errors?.username) {
-      message = "Username sudah digunakan.";
+      message = "Nama pengguna sudah digunakan.";
     } else if (data.errors?.email) {
-      message = "Email sudah digunakan atau tidak valid.";
+      message = "Surel sudah digunakan atau tidak valid.";
     } else if (data.detail) {
       message = data.detail;
     } else if (data.message) {

@@ -108,6 +108,7 @@ export default function HomeScreen() {
         pathname: '/hasil',
         params: {
           from: 'riwayat',
+          audio_name: detail.audio_name ?? '',
           teks: detail.teks ?? '',
           emosi: detail.emosi ?? '',
           ringkasan_cerita: detail.ringkasan_cerita ?? '',

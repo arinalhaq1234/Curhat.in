@@ -55,7 +55,7 @@ export default function ProfileScreen() {
 
         if (!profileData?.username) {
           throw new Error(
-            'Data username tidak ditemukan pada respons profil.'
+            'Data nama pengguna tidak ditemukan pada respons profil.'
           );
         }
 
@@ -180,13 +180,16 @@ export default function ProfileScreen() {
             </Text>
 
             <Text style={styles.email}>
-              {profile.email || 'Email belum tersedia'}
+              {profile.email || 'Surel belum tersedia'}
             </Text>
           </View>
         </View>
 
         <View style={styles.menuCard}>
-          <Pressable style={styles.actionItem}>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/keamanan-akun')}
+          >
             <View style={styles.actionLeft}>
               <View style={styles.menuIconBox}>
                 <Ionicons
@@ -210,7 +213,10 @@ export default function ProfileScreen() {
 
           <View style={styles.divider} />
 
-          <Pressable style={styles.actionItem}>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/tentang-aplikasi')}
+          >
             <View style={styles.actionLeft}>
               <View style={styles.menuIconBox}>
                 <Ionicons
@@ -234,7 +240,10 @@ export default function ProfileScreen() {
 
           <View style={styles.divider} />
 
-          <Pressable style={styles.actionItem}>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/bantuan')}
+          >
             <View style={styles.actionLeft}>
               <View style={styles.menuIconBox}>
                 <Ionicons

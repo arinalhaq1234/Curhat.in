@@ -44,19 +44,19 @@ export default function RegisterScreen() {
       !password.trim() ||
       !confirmPassword.trim()
     ) {
-      setError('Semua field wajib diisi.');
+      setError('Semua kolom wajib diisi.');
       return;
     }
 
     // VALIDASI USERNAME
     if (username.trim().length < 3) {
-      setError('Username minimal 3 karakter.');
+      setError('Nama pengguna minimal 3 karakter.');
       return;
     }
 
     // VALIDASI EMAIL
     if (!validateEmail(email.trim())) {
-      setError('Format email tidak valid.');
+      setError('Format surel tidak valid.');
       return;
     }
 
@@ -71,7 +71,7 @@ export default function RegisterScreen() {
 
     if (!isPasswordValid) {
       setError(
-        'Password harus terdiri dari 8–20 karakter dan mengandung huruf besar, huruf kecil, angka, serta karakter khusus.'
+        'Kata sandi harus terdiri dari 8–20 karakter dan mengandung huruf besar, huruf kecil, angka, serta karakter khusus.'
       );
       return;
     }
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
       normalizedPassword.includes(normalizedUsername)
     ) {
       setError(
-        'Password tidak boleh sama atau terlalu mirip dengan username. Silakan gunakan password lain.'
+        'Kata sandi tidak boleh sama atau terlalu mirip dengan nama pengguna. Silakan gunakan kata sandi lain.'
       );
       return;
     }
@@ -93,7 +93,7 @@ export default function RegisterScreen() {
     // VALIDASI KONFIRMASI PASSWORD
     if (password !== confirmPassword) {
       setError(
-        'Konfirmasi password tidak sesuai dengan password.'
+        'Konfirmasi kata sandi tidak sesuai dengan kata sandi.'
       );
       return;
     }
@@ -117,7 +117,7 @@ export default function RegisterScreen() {
       setError(
         error instanceof Error
           ? error.message
-          : 'Registrasi gagal. Silakan coba lagi.'
+          : 'Pendaftaran gagal. Silakan coba lagi.'
       );
     } finally {
       setLoading(false);
@@ -173,7 +173,7 @@ export default function RegisterScreen() {
 
         {/* USERNAME */}
         <Text style={styles.label}>
-          Username
+          Nama pengguna
         </Text>
 
         <View style={styles.inputContainer}>
@@ -186,7 +186,7 @@ export default function RegisterScreen() {
           <TextInput
             value={username}
             onChangeText={setUsername}
-            placeholder="Masukkan username"
+            placeholder="Masukkan nama pengguna"
             placeholderTextColor="#A6A0B3"
             autoCapitalize="none"
             editable={!loading}
@@ -196,7 +196,7 @@ export default function RegisterScreen() {
 
         {/* EMAIL */}
         <Text style={styles.label}>
-          Email
+          Surel
         </Text>
 
         <View style={styles.inputContainer}>
@@ -209,7 +209,7 @@ export default function RegisterScreen() {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Masukkan email"
+            placeholder="Masukkan surel"
             placeholderTextColor="#A6A0B3"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -220,7 +220,7 @@ export default function RegisterScreen() {
 
         {/* PASSWORD */}
         <Text style={styles.label}>
-          Password
+          Kata sandi
         </Text>
 
         <View style={styles.inputContainer}>
@@ -233,7 +233,7 @@ export default function RegisterScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Masukkan password"
+            placeholder="Masukkan kata sandi"
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showPassword}
             editable={!loading}
@@ -262,13 +262,13 @@ export default function RegisterScreen() {
 
         {/* KETENTUAN PASSWORD */}
         <Text style={styles.passwordHint}>
-          Password 8–20 karakter, mengandung huruf besar,
+          Kata sandi 8–20 karakter, mengandung huruf besar,
           huruf kecil, angka, dan karakter khusus.
         </Text>
 
         {/* KONFIRMASI PASSWORD */}
         <Text style={styles.label}>
-          Konfirmasi Password
+          Konfirmasi kata sandi
         </Text>
 
         <View style={styles.inputContainer}>
@@ -281,7 +281,7 @@ export default function RegisterScreen() {
           <TextInput
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="Masukkan ulang password"
+            placeholder="Masukkan ulang kata sandi"
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showConfirmPassword}
             editable={!loading}
