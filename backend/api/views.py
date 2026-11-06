@@ -1,8 +1,11 @@
 import logging
 import math
+from collections.abc import Mapping
 from io import BytesIO
 
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DatabaseError
 
 from rest_framework import status
@@ -434,6 +437,95 @@ def profile(request):
             }
         },
         status=status.HTTP_200_OK
+    )
+
+
+# =========================================================
+# UBAH KATA SANDI
+# =========================================================
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    if not isinstance(request.data, Mapping):
+        return Response(
+            {
+                "success": False,
+                "message": "Data permintaan harus berupa objek.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    password_lama = request.data.get("old_password")
+    password_baru = request.data.get("new_password")
+
+    if not isinstance(password_lama, str) or not password_lama:
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi lama wajib diisi.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not isinstance(password_baru, str) or not password_baru:
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi baru wajib diisi.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(password_baru) > 20:
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi baru maksimal 20 karakter.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = request.user
+    if not user.check_password(password_lama):
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi lama tidak sesuai.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if user.check_password(password_baru):
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi baru harus berbeda dari kata sandi lama.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        validate_password(password_baru, user=user)
+    except DjangoValidationError as error:
+        return Response(
+            {
+                "success": False,
+                "message": "Kata sandi baru tidak memenuhi ketentuan.",
+                "errors": {"new_password": error.messages},
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(password_baru)
+    user.save(update_fields=["password"])
+
+    return Response(
+        {
+            "success": True,
+            "message": "Kata sandi berhasil diubah.",
+        },
+        status=status.HTTP_200_OK,
     )
 
 

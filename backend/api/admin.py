@@ -199,6 +199,7 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
         "teks_singkat",
         "audio_name",
         "emosi",
+        "ringkasan_cerita_singkat",
         "akar_masalah_singkat",
         "waktu",
     )
@@ -226,6 +227,14 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
             return "-"
 
         return obj.teks[:50]
+
+    @admin.display(description="Ringkasan Cerita")
+    def ringkasan_cerita_singkat(self, obj):
+
+        if not obj.ringkasan_cerita:
+            return "-"
+
+        return obj.ringkasan_cerita[:50]
 
     # =====================================================
     # TAMPILAN AKAR MASALAH SINGKAT

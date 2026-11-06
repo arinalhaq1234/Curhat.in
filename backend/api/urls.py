@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .google_login import google_login
+from .admin_statistics import admin_statistics
 
 
 urlpatterns = [
@@ -14,6 +15,9 @@ urlpatterns = [
     path("auth/register/", views.register, name="register"),
     path("auth/login/", views.login_user, name="login"),
     path("auth/profile/", views.profile, name="profile"),
+    path("auth/change-password/", views.change_password, name="change-password"),
     path("auth/logout/", views.logout_user, name="logout"),
     path("auth/admin-check/", views.admin_check, name="admin-check"),
+
+    path("admin/statistics/", admin_statistics, name="admin-statistics"),
 ]
