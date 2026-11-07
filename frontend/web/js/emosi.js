@@ -1,11 +1,39 @@
-﻿async function loadEmotion() {
+async function loadEmotion() {
     const message = document.getElementById("dashboard-message");
     const summary = document.getElementById("emotion-summary");
 
     try {
         message.textContent = "Memuat distribusi emosi...";
 
-        const response = await fetch("./data/dashboard-mock.json?v=8");
+        await window.curhatAdminAuthReady;
+
+// Jangan mengambil statistik jika sesi admin tidak valid.
+if (document.body.style.visibility !== "visible") {
+    return;
+}
+
+const token = sessionStorage.getItem("curhat_admin_access");
+const baseURL = window.CURHAT_CONFIG?.API_BASE_URL;
+
+if (!token || !baseURL) {
+    window.location.replace("./login.html");
+    return;
+}
+
+const response = await fetch(baseURL + "admin/statistics/", {
+    method: "GET",
+    headers: {
+        "Authorization": "Bearer " + token
+    },
+    cache: "no-store"
+});
+
+if (response.status === 401 || response.status === 403) {
+    sessionStorage.removeItem("curhat_admin_access");
+    sessionStorage.removeItem("curhat_admin_refresh");
+    window.location.replace("./login.html");
+    return;
+}
 
         if (!response.ok) {
             throw new Error("Data emosi tidak dapat dimuat.");
@@ -89,7 +117,7 @@
         });
 
         message.textContent =
-            "Menampilkan 8 kategori emosi menggunakan data contoh.";
+            "Distribusi emosi menggunakan data backend.";
 
     } catch (error) {
         message.textContent =

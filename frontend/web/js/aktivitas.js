@@ -1,4 +1,4 @@
-﻿let activityChart = null;
+let activityChart = null;
 let activityData = [];
 
 const message = document.getElementById("dashboard-message");
@@ -72,12 +72,57 @@ function renderActivity(start, end) {
         }
     });
 
-    message.textContent = "Menampilkan data contoh aktivitas harian.";
+    message.textContent = "Menampilkan aktivitas harian menggunakan data backend.";
 }
 
 async function loadActivity() {
     try {
-        const response = await fetch("./data/dashboard-mock.json");
+        await window.curhatAdminAuthReady;
+
+        if (document.body.style.visibility !== "visible") {
+            return;
+        }
+
+        const start = document.getElementById("filter-start").value;
+        const end = document.getElementById("filter-end").value;
+
+        if (!start || !end || start > end) {
+            message.textContent = "Tanggal awal dan akhir harus valid.";
+            return;
+        }
+
+        const token = sessionStorage.getItem("curhat_admin_access");
+        const baseURL = window.CURHAT_CONFIG?.API_BASE_URL;
+
+        if (!token || !baseURL) {
+            window.location.replace("./login.html");
+            return;
+        }
+
+        message.textContent = "Memuat aktivitas harian...";
+
+        const params = new URLSearchParams({
+            start_date: start,
+            end_date: end
+        });
+
+        const response = await fetch(
+            baseURL + "admin/statistics/?" + params.toString(),
+            {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                },
+                cache: "no-store"
+            }
+        );
+
+        if (response.status === 401 || response.status === 403) {
+            sessionStorage.removeItem("curhat_admin_access");
+            sessionStorage.removeItem("curhat_admin_refresh");
+            window.location.replace("./login.html");
+            return;
+        }
 
         if (!response.ok) {
             throw new Error("Data aktivitas tidak dapat dimuat.");
@@ -91,22 +136,13 @@ async function loadActivity() {
 
         activityData = data.aktivitas_harian;
 
-        renderActivity(
-            document.getElementById("filter-start").value,
-            document.getElementById("filter-end").value
-        );
+        renderActivity(start, end);
 
     } catch (error) {
         message.textContent = "Gagal memuat aktivitas: " + error.message;
         console.error(error);
     }
 }
-
-document.getElementById("apply-filter").addEventListener("click", () => {
-    renderActivity(
-        document.getElementById("filter-start").value,
-        document.getElementById("filter-end").value
-    );
-});
+document.getElementById("apply-filter").addEventListener("click", loadActivity);
 
 loadActivity();
