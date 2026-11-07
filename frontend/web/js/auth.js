@@ -1,6 +1,6 @@
 "use strict";
 
-(async function protectAdminPage() {
+window.curhatAdminAuthReady = (async function protectAdminPage() {
     document.body.style.visibility = "hidden";
 
     const access = sessionStorage.getItem("curhat_admin_access");

@@ -1,12 +1,38 @@
-﻿async function loadDashboard() {
+async function loadDashboard() {
     const message = document.getElementById("dashboard-message");
 
     try {
         message.textContent = "Memuat ringkasan dashboard...";
 
-        const response = await fetch(
-            "./data/dashboard-mock.json?v=ringkasan3"
-        );
+        await window.curhatAdminAuthReady;
+
+// Pastikan pemeriksaan hak admin sudah berhasil.
+if (document.body.style.visibility !== "visible") {
+    return;
+}
+
+const token = sessionStorage.getItem("curhat_admin_access");
+const baseURL = window.CURHAT_CONFIG?.API_BASE_URL;
+
+if (!token || !baseURL) {
+    window.location.replace("./login.html");
+    return;
+}
+
+const response = await fetch(baseURL + "admin/statistics/", {
+    method: "GET",
+    headers: {
+        "Authorization": "Bearer " + token
+    },
+    cache: "no-store"
+});
+
+if (response.status === 401 || response.status === 403) {
+    sessionStorage.removeItem("curhat_admin_access");
+    sessionStorage.removeItem("curhat_admin_refresh");
+    window.location.replace("./login.html");
+    return;
+}
 
         if (!response.ok) {
             throw new Error("Data tidak dapat dimuat.");
@@ -60,7 +86,7 @@
             perubahan;
 
         message.textContent =
-            "Ringkasan monitoring menggunakan data contoh.";
+            "Ringkasan monitoring menggunakan data backend.";
 
     } catch (error) {
         message.textContent =
