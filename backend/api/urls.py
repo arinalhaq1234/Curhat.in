@@ -1,11 +1,12 @@
 from django.urls import path
 from . import views
-from .google_login import google_login
+from .google_login import google_login, google_register
 from .admin_statistics import admin_statistics
 
 
 urlpatterns = [
-    path("auth/google/", google_login, name="google-login"),
+    path("auth/google/register/", google_register, name="google-register"),
+    path("auth/google/login/", google_login, name="google-login"),
     path("health/", views.health_check, name="health-check"),
     path("curhat/text/", views.curhat_text, name="curhat-text"),
     path("curhat/audio/", views.curhat_audio, name="curhat-audio"),
