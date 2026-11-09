@@ -337,7 +337,7 @@ export default function RegisterScreen() {
         </Pressable>
 
         {/* LINK LOGIN */}
-        <GoogleSignInButton disabled={loading} />
+        <GoogleSignInButton mode="register" disabled={loading} />
 
         <View style={styles.loginRow}>
           <Text style={styles.loginText}>

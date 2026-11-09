@@ -1,4 +1,7 @@
-﻿import {
+import { ApiError, loginWithGoogle, registerWithGoogle } from '@/services/api';
+import { saveSession } from '@/services/session';
+import { router } from 'expo-router';
+import {
   GoogleSignin,
   isErrorWithCode,
   isSuccessResponse,
@@ -17,10 +20,14 @@ import {
 } from 'react-native';
 
 type Props = {
+  mode: 'login' | 'register';
   disabled?: boolean;
 };
 
-export default function GoogleSignInButton({ disabled = false }: Props) {
+export default function GoogleSignInButton({
+  mode,
+  disabled = false,
+}: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -47,6 +54,7 @@ export default function GoogleSignInButton({ disabled = false }: Props) {
         showPlayServicesUpdateDialog: true,
       });
 
+      await GoogleSignin.signOut();
       const response = await GoogleSignin.signIn();
 
       if (!isSuccessResponse(response)) {
@@ -64,15 +72,48 @@ export default function GoogleSignInButton({ disabled = false }: Props) {
         );
         return;
       }
+      // APP-007 Tahap 2: Verifikasi Google ID Token melalui Django.
+      const result = mode === 'register'
+        ? await registerWithGoogle(response.data.idToken)
+        : await loginWithGoogle(response.data.idToken);
 
-      // APP-007 Tahap 1:
-      // Token belum dikirim ke backend dan belum disimpan.
-      Alert.alert(
-        'Google terhubung',
-        'Pemilihan akun Google berhasil. Integrasi dengan backend dilakukan pada Tahap 2.'
-      );
+      if (result?.success !== true) {
+        throw new Error(
+          typeof result?.message === 'string'
+            ? result.message
+            : 'Login Google gagal.'
+        );
+      }
 
-    } catch (error) {
+      const accessToken = result?.data?.access;
+      const refreshToken = result?.data?.refresh;
+
+      if (
+        typeof accessToken !== 'string' ||
+        !accessToken ||
+        typeof refreshToken !== 'string' ||
+        !refreshToken
+      ) {
+        throw new Error('Token sesi Curhat.in tidak tersedia.');
+      }
+
+      if (mode === 'register') {
+        Alert.alert(
+          'Pendaftaran berhasil',
+          'Akun Google berhasil didaftarkan. Silakan masuk menggunakan Google.',
+          [
+            {
+              text: 'Ke Login',
+              onPress: () => router.replace('/login'),
+            },
+          ]
+        );
+        return;
+      }
+
+      await saveSession(accessToken, refreshToken);
+      router.replace('/home');
+} catch (error) {
       if (isErrorWithCode(error)) {
         if (error.code === statusCodes.IN_PROGRESS) {
           return;
@@ -87,9 +128,19 @@ export default function GoogleSignInButton({ disabled = false }: Props) {
         }
       }
 
+      if (error instanceof ApiError) {
+        Alert.alert(
+          mode === 'register' ? 'Daftar Google gagal' : 'Login Google gagal',
+          error.message
+        );
+        return;
+      }
+
       Alert.alert(
-        'Google Login gagal',
-        'Tidak dapat membuka atau menyelesaikan pemilihan akun Google. Periksa konfigurasi aplikasi.'
+        mode === 'register' ? 'Daftar Google gagal' : 'Login Google gagal',
+        error instanceof Error
+          ? error.message
+          : 'Tidak dapat menyelesaikan autentikasi Google. Silakan coba kembali.'
       );
     } finally {
       setLoading(false);
@@ -158,4 +209,3 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
-

@@ -337,3 +337,23 @@ export async function getCurhatHistoryDetail(
     },
   });
 }
+
+// APP-007 Tahap 2 - Login menggunakan akun Google
+export async function registerWithGoogle(idToken: string) {
+  return apiRequest("/api/auth/google/register/", {
+    method: "POST",
+    body: JSON.stringify({
+      id_token: idToken,
+    }),
+  });
+}
+
+// APP-007 Tahap 2 - Login menggunakan akun Google
+export async function loginWithGoogle(idToken: string) {
+  return apiRequest("/api/auth/google/login/", {
+    method: "POST",
+    body: JSON.stringify({
+      id_token: idToken,
+    }),
+  });
+}
