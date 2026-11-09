@@ -9,9 +9,27 @@ function renderActivity(start, end) {
         return;
     }
 
-    const filtered = activityData.filter(item =>
-        item.tanggal >= start && item.tanggal <= end
+    const countsByDate = new Map(
+        activityData.map(item => [
+            item.tanggal,
+            Number(item.jumlah)
+        ])
     );
+
+    const filtered = [];
+    const currentDate = new Date(start + "T00:00:00Z");
+    const endDate = new Date(end + "T00:00:00Z");
+
+    while (currentDate <= endDate) {
+        const date = currentDate.toISOString().slice(0, 10);
+
+        filtered.push({
+            tanggal: date,
+            jumlah: countsByDate.get(date) ?? 0
+        });
+
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
 
     const total = filtered.reduce(
         (sum, item) => sum + item.jumlah, 0
@@ -36,9 +54,9 @@ function renderActivity(start, end) {
 
     const canvas = document.getElementById("activity-chart");
 
-    if (filtered.length === 0) {
+    if (total === 0) {
         canvas.style.display = "none";
-        message.textContent = "Tidak ada data aktivitas pada periode ini.";
+        message.textContent = "Tidak ada curhat pada periode ini.";
         return;
     }
 
@@ -56,7 +74,9 @@ function renderActivity(start, end) {
             datasets: [{
                 label: "Jumlah Curhat",
                 data: filtered.map(item => item.jumlah),
-                backgroundColor: "#8B70C2",
+                backgroundColor: filtered.map(item =>
+                    item.jumlah === 0 ? "#9CA3AF" : "#8B70C2"
+                ),
                 borderRadius: 8
             }]
         },

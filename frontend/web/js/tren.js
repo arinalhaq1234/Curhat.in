@@ -9,16 +9,34 @@ function renderTrend(start, end) {
         return;
     }
 
-    const filtered = trendData.filter(item =>
-        item.tanggal >= start && item.tanggal <= end
+    const countsByDate = new Map(
+        trendData.map(item => [
+            item.tanggal,
+            Number(item.jumlah_curhat)
+        ])
     );
+
+    const filtered = [];
+    const currentDate = new Date(start + "T00:00:00Z");
+    const endDate = new Date(end + "T00:00:00Z");
+
+    while (currentDate <= endDate) {
+        const date = currentDate.toISOString().slice(0, 10);
+
+        filtered.push({
+            tanggal: date,
+            jumlah_curhat: countsByDate.get(date) ?? 0
+        });
+
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
 
     const values = filtered.map(item => Number(item.jumlah_curhat));
 
     const total = values.reduce((sum, value) => sum + value, 0);
     const peak = values.length ? Math.max(...values) : 0;
 
-    let change = "—";
+    let change = "-";
 
     if (values.length >= 2) {
         const difference = values[values.length - 1] - values[0];
@@ -36,7 +54,7 @@ function renderTrend(start, end) {
 
     const canvas = document.getElementById("trend-chart");
 
-    if (!filtered.length) {
+    if (total === 0) {
         canvas.style.display = "none";
         message.textContent = "Tidak ada data tren pada periode ini.";
         return;
@@ -60,7 +78,13 @@ function renderTrend(start, end) {
                 backgroundColor: "rgba(129,100,199,0.15)",
                 fill: true,
                 tension: 0.3,
-                pointRadius: 5
+                pointRadius: 5,
+                pointBackgroundColor: values.map(value =>
+                    value === 0 ? "#9CA3AF" : "#8164C7"
+                ),
+                pointBorderColor: values.map(value =>
+                    value === 0 ? "#9CA3AF" : "#8164C7"
+                )
             }]
         },
         options: {
