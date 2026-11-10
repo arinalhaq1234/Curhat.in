@@ -15,7 +15,7 @@ from rest_framework.test import APIClient
 
 from . import services
 from .models import RiwayatCurhat
-from .tests import hasil_contoh, rekaman_wav, respons_ai
+from .tests import hasil_contoh, rekaman_m4a, rekaman_wav, respons_ai
 
 
 REKOMENDASI_MOBILE = (
@@ -119,7 +119,7 @@ class RecommendationBackendTests(TestCase):
                 self.generate.return_value = respons_ai(hasil_rekomendasi(audio=audio))
                 if audio:
                     upload = SimpleUploadedFile(
-                        "curhat.wav", rekaman_wav(), content_type="audio/wav"
+                        "curhat.m4a", rekaman_m4a(), content_type="audio/m4a"
                     )
                     response = self.api.post(
                         "/api/curhat/audio/", {"audio": upload}, format="multipart"
@@ -151,7 +151,7 @@ class RecommendationBackendTests(TestCase):
                 )
                 if audio:
                     upload = SimpleUploadedFile(
-                        "curhat.wav", rekaman_wav(), content_type="audio/wav"
+                        "curhat.m4a", rekaman_m4a(), content_type="audio/m4a"
                     )
                     response = self.api.post(
                         "/api/curhat/audio/", {"audio": upload}, format="multipart"

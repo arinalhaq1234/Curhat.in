@@ -1,7 +1,8 @@
-"""Regresi kegagalan live: WAV hening tidak boleh menghasilkan cerita buatan."""
+"""Regresi audio hening: WAV di service dan M4A/AAC pada upload backend."""
 
 import wave
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -66,7 +67,8 @@ class DigitalSilenceBackendTests(TestCase):
         self.generate = self.enterContext(patch("api.services.generate_with_retry"))
 
     def upload(self):
-        return SimpleUploadedFile("hening.wav", wav_pcm(), content_type="audio/wav")
+        audio_bytes = (Path(__file__).resolve().parent / "examples" / "test-silence-aac.m4a").read_bytes()
+        return SimpleUploadedFile("hening.m4a", audio_bytes, content_type="audio/m4a")
 
     def test_silent_upload_is_400_without_gemini_or_history(self):
         response = self.api.post(

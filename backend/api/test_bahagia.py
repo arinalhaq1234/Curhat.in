@@ -15,7 +15,7 @@ from rest_framework.test import APIClient
 from . import services
 from .admin import RiwayatCurhatAdminForm
 from .models import RiwayatCurhat
-from .tests import rekaman_wav, respons_ai
+from .tests import rekaman_m4a, rekaman_wav, respons_ai
 
 
 FIELD_BE002 = {"emosi", "ringkasan_cerita", "akar_masalah", "rekomendasi"}
@@ -133,7 +133,7 @@ class BahagiaBackendTests(TestCase):
         ))
 
     def upload(self):
-        return SimpleUploadedFile("bahagia.wav", rekaman_wav(), content_type="audio/wav")
+        return SimpleUploadedFile("bahagia.m4a", rekaman_m4a(), content_type="audio/m4a")
 
     def check_saved_response(self, response):
         self.assertEqual(response.status_code, 201)
@@ -161,7 +161,7 @@ class BahagiaBackendTests(TestCase):
             "audio": self.upload(), "user_id": self.other.pk, "emosi": "Sedih",
         }, format="multipart")
         record = self.check_saved_response(response)
-        self.assertEqual(bytes(record.audio_file), rekaman_wav())
+        self.assertEqual(bytes(record.audio_file), rekaman_m4a())
 
     def test_admin_text_and_audio_can_save_bahagia_without_model_changes(self):
         for audio in (False, True):
