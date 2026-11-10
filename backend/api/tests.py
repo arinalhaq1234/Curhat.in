@@ -4,6 +4,7 @@ import json
 import os
 import wave
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import call, patch
 
@@ -46,6 +47,11 @@ def rekaman_wav():
         rekaman.setframerate(8000)
         rekaman.writeframes(b"\x10\x00\xf0\xff" * 400)
     return buffer.getvalue()
+
+
+def rekaman_m4a():
+    """Fixture M4A/AAC asli untuk pengujian endpoint upload."""
+    return (Path(__file__).resolve().parent / "examples" / "test-tone-aac.m4a").read_bytes()
 
 
 class ParseJsonTests(SimpleTestCase):
@@ -264,7 +270,7 @@ class BackendIntegrationTests(TestCase):
         self.enterContext(patch("api.views.logger.exception"))
 
     def upload(self):
-        return SimpleUploadedFile("curhat.wav", rekaman_wav(), content_type="audio/wav")
+        return SimpleUploadedFile("curhat.m4a", rekaman_m4a(), content_type="audio/m4a")
 
     def test_health_remains_public_without_a_gemini_key(self):
         with patch.dict(os.environ, {}, clear=True):
@@ -295,11 +301,14 @@ class BackendIntegrationTests(TestCase):
 
     def test_audio_uses_the_same_pipeline_and_preserves_file_bytes(self):
         self.generate.return_value = respons_ai(hasil_contoh(audio=True))
-        response = self.api.post("/api/curhat/audio/", {"audio": self.upload()}, format="multipart")
+        audio_bytes = rekaman_m4a()
+        response = self.api.post("/api/curhat/audio/", {
+            "audio": SimpleUploadedFile("curhat.m4a", audio_bytes, content_type="audio/m4a")
+        }, format="multipart")
         self.assertEqual(response.status_code, 201)
         riwayat = RiwayatCurhat.objects.get()
-        self.assertEqual(bytes(riwayat.audio_file), rekaman_wav())
-        self.assertEqual(riwayat.audio_name, "curhat.wav")
+        self.assertEqual(bytes(riwayat.audio_file), audio_bytes)
+        self.assertEqual(riwayat.audio_name, "curhat.m4a")
         self.assertEqual(riwayat.user, self.user)
         self.assertIsNone(riwayat.teks)
         for field, value in hasil_contoh().items():
@@ -388,7 +397,7 @@ class BackendIntegrationTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         riwayat = form.save()
         self.assertEqual(riwayat.ringkasan_cerita, hasil_contoh()["ringkasan_cerita"])
-        self.assertEqual(bytes(riwayat.audio_file), rekaman_wav())
+        self.assertEqual(bytes(riwayat.audio_file), rekaman_m4a())
 
     def test_admin_rejects_ambiguous_text_without_saving(self):
         self.generate.return_value = respons_ai({"valid": False, "pesan": "Ceritakan lebih lanjut."})

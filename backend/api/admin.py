@@ -181,69 +181,33 @@ class RiwayatCurhatAdmin(admin.ModelAdmin):
     form = RiwayatCurhatAdminForm
 
     def get_queryset(self, request):
-        # Daftar admin hanya membutuhkan metadata, bukan seluruh isi rekaman.
-        return super().get_queryset(request).defer("audio_file")
+        # Jangan ambil isi privat ketika admin hanya membaca metadata.
+        return super().get_queryset(request).defer(
+            "teks", "audio_file", "ringkasan_cerita", "akar_masalah",
+            "rekomendasi",
+        )
 
-    # Hasil AI tidak boleh diedit manual
-    readonly_fields = (
-        "audio_name",
-        "emosi",
-        "ringkasan_cerita",
-        "akar_masalah",
-        "rekomendasi",
-        "waktu",
-    )
+    readonly_fields = ("id", "waktu", "jenis_input", "status_analisis")
+    fields = readonly_fields
+    list_display = readonly_fields
+    list_display_links = ("id",)
+    search_fields = ("=id",)
+    ordering = ("-waktu",)
+    actions = None
 
-    list_display = (
-        "id",
-        "teks_singkat",
-        "audio_name",
-        "emosi",
-        "ringkasan_cerita_singkat",
-        "akar_masalah_singkat",
-        "waktu",
-    )
+    def has_add_permission(self, request):
+        return False
 
-    search_fields = (
-        "teks",
-        "emosi",
-        "ringkasan_cerita",
-        "akar_masalah",
-        "rekomendasi",
-    )
+    def has_change_permission(self, request, obj=None):
+        return False
 
-    ordering = (
-        "-waktu",
-    )
+    def has_delete_permission(self, request, obj=None):
+        return False
 
-    # =====================================================
-    # TAMPILAN TEKS SINGKAT
-    # =====================================================
+    @admin.display(description="Jenis input")
+    def jenis_input(self, obj):
+        return "Audio" if obj.audio_name else "Teks"
 
-    @admin.display(description="Teks Curhat")
-    def teks_singkat(self, obj):
-
-        if not obj.teks:
-            return "-"
-
-        return obj.teks[:50]
-
-    @admin.display(description="Ringkasan Cerita")
-    def ringkasan_cerita_singkat(self, obj):
-
-        if not obj.ringkasan_cerita:
-            return "-"
-
-        return obj.ringkasan_cerita[:50]
-
-    # =====================================================
-    # TAMPILAN AKAR MASALAH SINGKAT
-    # =====================================================
-
-    @admin.display(description="Akar Masalah")
-    def akar_masalah_singkat(self, obj):
-
-        if not obj.akar_masalah:
-            return "-"
-
-        return obj.akar_masalah[:50]
+    @admin.display(description="Status analisis")
+    def status_analisis(self, obj):
+        return "Selesai" if obj.emosi else "Belum dianalisis"

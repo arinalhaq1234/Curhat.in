@@ -2,12 +2,16 @@
 
 import json
 import os
+import re
+import subprocess
+import tempfile
 import time
 import wave
 from io import BytesIO
 
 from google import genai
 from google.genai import types
+from imageio_ffmpeg import get_ffmpeg_exe
 
 
 # Pertahankan model proyek. Client baru dibuat saat analisis sungguhan diminta,
@@ -461,6 +465,38 @@ def _wav_hening_digital(audio_bytes):
     return bool(data) and not data.strip(titik_hening)
 
 
+def _m4a_hening_digital(audio_bytes):
+    """Periksa seluruh sampel AAC sebagai PCM 32-bit tanpa menyimpan PCM di memori."""
+    command = [
+        get_ffmpeg_exe(), "-hide_banner", "-nostats", "-loglevel", "info",
+        "-max_alloc", "16777216",
+        "-i", "pipe:0", "-map", "0:a:0", "-vn", "-sn", "-dn",
+        "-af", "aformat=sample_fmts=s32,astats=metadata=0:reset=0:measure_overall=Peak_level+Number_of_samples",
+        "-f", "null", "-",
+    ]
+    # PCM dibuang ke null; alokasi tunggal FFmpeg dibatasi dan log tidak ditahan di memori.
+    with tempfile.TemporaryFile() as log:
+        try:
+            result = subprocess.run(
+                command, input=audio_bytes, stdout=subprocess.DEVNULL,
+                stderr=log, timeout=15, check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("Pemeriksaan audio melewati batas waktu.") from error
+        if result.returncode != 0:
+            # File yang gagal didekode bukan bukti keheningan.
+            return False
+
+        log.seek(0, 2)
+        log.seek(max(0, log.tell() - 8192))
+        overall = log.read().rsplit(b"Overall", 1)[-1]
+        samples = re.search(rb"Number of samples:\s*(\d+)", overall)
+        return bool(
+            samples and int(samples.group(1)) > 0
+            and re.search(rb"Peak level dB:\s*-inf\b", overall)
+        )
+
+
 def analisis_audio(audio_bytes, mime_type):
     """Audio langsung ke Gemini; batas ukuran/durasi diperiksa endpoint upload."""
     if not isinstance(audio_bytes, (bytes, bytearray)) or not audio_bytes:
@@ -468,7 +504,9 @@ def analisis_audio(audio_bytes, mime_type):
     if not isinstance(mime_type, str) or mime_type not in AUDIO_MIME_TYPES:
         raise InputCurhatError("Format audio tidak didukung. Gunakan MP3, WAV, atau M4A.")
     mime_normal = AUDIO_MIME_TYPES[mime_type]
-    if mime_normal == "audio/wav" and _wav_hening_digital(audio_bytes):
+    if (mime_normal == "audio/wav" and _wav_hening_digital(audio_bytes)) or (
+        mime_normal == "audio/mp4" and _m4a_hening_digital(audio_bytes)
+    ):
         return {"valid": False, "pesan": ALASAN_PENOLAKAN_AUDIO["hening"]}
     audio_part = types.Part.from_bytes(
         data=bytes(audio_bytes),

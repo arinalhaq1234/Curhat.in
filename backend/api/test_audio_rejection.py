@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from . import services
 from .models import RiwayatCurhat
-from .tests import hasil_contoh, rekaman_wav, respons_ai
+from .tests import hasil_contoh, rekaman_m4a, rekaman_wav, respons_ai
 
 
 KODE_PENOLAKAN = (
@@ -125,7 +125,7 @@ class AudioRejectionBackendTests(TestCase):
 
     def upload(self):
         # Audio sintetis hanya menguji transport/parsing. Klasifikasi dimock.
-        return SimpleUploadedFile("curhat.wav", rekaman_wav(), content_type="audio/wav")
+        return SimpleUploadedFile("curhat.m4a", rekaman_m4a(), content_type="audio/m4a")
 
     def test_specific_rejections_are_400_without_internal_fields_or_history(self):
         for kode in KODE_PENOLAKAN:
@@ -178,7 +178,7 @@ class AudioRejectionBackendTests(TestCase):
         self.assertEqual(response.status_code, 201)
         record = RiwayatCurhat.objects.get()
         self.assertEqual(record.user_id, self.user.pk)
-        self.assertEqual(bytes(record.audio_file), rekaman_wav())
+        self.assertEqual(bytes(record.audio_file), rekaman_m4a())
         for field in services.FIELD_ANALISIS:
             self.assertEqual(response.data["data"][field], hasil[field])
             self.assertEqual(getattr(record, field), hasil[field])
