@@ -12,6 +12,7 @@ export default function RootLayout() {
       <Stack.Screen name="hasil" />
       <Stack.Screen name="riwayat" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="edit-profil" />
       <Stack.Screen name="keamanan-akun" />
       <Stack.Screen name="tentang-aplikasi" />
       <Stack.Screen name="bantuan" />

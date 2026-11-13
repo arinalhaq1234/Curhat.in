@@ -16,6 +16,7 @@ import {
 import {
   ApiError,
   getCurhatHistory,
+  getCachedCurhatHistory,
   getCurhatHistoryDetail,
 } from '@/services/api';
 import { getAccessToken } from '@/services/session';
@@ -231,6 +232,7 @@ export default function RiwayatScreen() {
   const openingRef = useRef(false);
   const loadingMoreRef = useRef(false);
   const firstPageLoadingRef = useRef(false);
+  const hasDataRef = useRef(false);
 
   const redirectToLogin = useCallback(() => {
     router.replace('/login');
@@ -242,6 +244,7 @@ export default function RiwayatScreen() {
       if (firstPageLoadingRef.current ||
           (requestedPage !== 1 && loadingMoreRef.current)) return;
       const requestId = ++requestIdRef.current;
+      const startedAt = Date.now();
       const isFirstPage = requestedPage === 1;
 
       if (isFirstPage) {
@@ -249,7 +252,7 @@ export default function RiwayatScreen() {
         loadingMoreRef.current = false;
         setLoadingMore(false);
         setRefreshing(isRefresh);
-        setLoading(!isRefresh);
+        setLoading(!isRefresh && !hasDataRef.current);
       } else {
         loadingMoreRef.current = true;
         setLoadingMore(true);
@@ -265,6 +268,20 @@ export default function RiwayatScreen() {
         if (!token) {
           redirectToLogin();
           return;
+        }
+
+        if (isFirstPage && !hasDataRef.current) {
+          const cached = getCachedCurhatHistory(token)?.data;
+          if (Array.isArray(cached?.results)) {
+            const items = cached.results.map(mapHistoryItem).filter((item: HistoryItem | null): item is HistoryItem => item !== null);
+            setHistories(items);
+            setPage(1);
+            setHasNext(Boolean(cached.next));
+            hasDataRef.current = true;
+            setTimeout(() => {
+              if (requestId === requestIdRef.current) setLoading(false);
+            }, Math.max(0, 500 - (Date.now() - startedAt)));
+          }
         }
 
         const response =
@@ -314,6 +331,7 @@ export default function RiwayatScreen() {
         });
 
         setPage(requestedPage);
+        hasDataRef.current = true;
         setHasNext(Boolean(response.data.next));
         setError('');
         setErrorSource(null);
@@ -334,6 +352,10 @@ export default function RiwayatScreen() {
         setErrorSource('list');
         setFailedPage(requestedPage);
       } finally {
+        const remaining = 500 - (Date.now() - startedAt);
+        if (requestId === requestIdRef.current && remaining > 0) {
+          await new Promise<void>(resolve => setTimeout(resolve, remaining));
+        }
         if (requestId === requestIdRef.current) {
           setLoading(false);
           setLoadingMore(false);
@@ -355,6 +377,9 @@ export default function RiwayatScreen() {
         requestIdRef.current += 1;
         loadingMoreRef.current = false;
         firstPageLoadingRef.current = false;
+        hasDataRef.current = false;
+        setHistories([]);
+        setLoading(true);
       };
     }, [loadHistory])
   );

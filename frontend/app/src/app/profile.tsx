@@ -1,6 +1,7 @@
 import {
   ApiError,
   getProfile,
+  getCachedProfile,
   logoutUser,
 } from '@/services/api';
 import {
@@ -9,8 +10,8 @@ import {
   getRefreshToken,
 } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -37,12 +38,15 @@ export default function ProfileScreen() {
   const logoutRef = useRef(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    let active = true;
     const loadProfile = async () => {
+      const startedAt = Date.now();
       try {
         setError('');
 
         const accessToken = await getAccessToken();
+        if (!active) return;
 
         if (!accessToken) {
           await clearSession();
@@ -50,9 +54,14 @@ export default function ProfileScreen() {
           return;
         }
 
-        const response = await getProfile(accessToken);
+        const cached = getCachedProfile(accessToken)?.data;
+        if (cached?.username) {
+          setProfile({ username: cached.username, email: cached.email ?? '' });
+          setTimeout(() => { if (active) setLoading(false); }, Math.max(0, 500 - (Date.now() - startedAt)));
+        }
 
-        console.log('PROFILE RESPONSE:', response);
+        const response = await getProfile(accessToken);
+        if (!active) return;
 
         const profileData = response.data ?? response;
 
@@ -69,7 +78,7 @@ export default function ProfileScreen() {
             : '',
         });
       } catch (error) {
-        console.log('PROFILE ERROR:', error);
+        if (!active) return;
 
         if (error instanceof ApiError && error.status === 401) {
           await clearSession();
@@ -83,12 +92,20 @@ export default function ProfileScreen() {
             : 'Profil gagal dimuat.'
         );
       } finally {
-        setLoading(false);
+        const remaining = 500 - (Date.now() - startedAt);
+        if (active && remaining > 0) await new Promise<void>(resolve => setTimeout(resolve, remaining));
+        if (active) setLoading(false);
       }
     };
 
     loadProfile();
-  }, []);
+    return () => {
+      active = false;
+      // Pulihkan snapshot hanya setelah token sesi saat ini diperiksa.
+      setProfile(null);
+      setLoading(true);
+    };
+  }, []));
 
   const handleLogout = async () => {
     if (logoutRef.current) return;
@@ -160,7 +177,7 @@ export default function ProfileScreen() {
   }
 
   const initial = profile.username
-    ? profile.username.charAt(0).toUpperCase()
+    ? Array.from(profile.username)[0].toUpperCase()
     : 'U';
 
   return (
@@ -173,7 +190,7 @@ export default function ProfileScreen() {
           Profil
         </Text>
 
-        <View style={styles.profileHeader}>
+        <Pressable style={styles.profileHeader} onPress={() => router.push('/edit-profil')} disabled={logoutLoading} accessibilityRole="button" accessibilityLabel="Edit Profil">
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {initial}
@@ -189,7 +206,8 @@ export default function ProfileScreen() {
               {profile.email || 'Surel belum tersedia'}
             </Text>
           </View>
-        </View>
+          <Ionicons name="pencil-outline" size={19} color="#8067B7" />
+        </Pressable>
 
         <View style={styles.menuCard}>
           <Pressable

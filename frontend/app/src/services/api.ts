@@ -2,6 +2,10 @@
 import { API_URL } from "@/constants/api";
 import { File } from 'expo-file-system';
 import { fetch as expoFetch } from 'expo/fetch';
+import { cachedRead, clearReadCache, readOnce } from './readCache';
+
+export const getCachedProfile = (token: string) => cachedRead(token, '/api/auth/profile/');
+export const getCachedCurhatHistory = (token: string, page = 1) => cachedRead(token, `/api/curhat/history/?page=${page}`);
 
 export class ApiError extends Error {
   status: number;
@@ -45,6 +49,7 @@ export async function apiRequest(
     );
   }
 
+  if (options.method && !['GET', 'HEAD'].includes(options.method.toUpperCase()) && data?.success === true) clearReadCache();
   return data;
 }
 
@@ -81,12 +86,12 @@ export async function loginUser(
 }
 
 export async function getProfile(accessToken: string) {
-  return apiRequest("/api/auth/profile/", {
+  return readOnce(accessToken, '/api/auth/profile/', () => apiRequest("/api/auth/profile/", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-  });
+  }));
 }
 
 export async function changePassword(oldPassword: string, newPassword: string, accessToken: string) {
@@ -95,6 +100,16 @@ export async function changePassword(oldPassword: string, newPassword: string, a
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
   });
+}
+
+export async function updateProfile(username: string, accessToken: string) {
+  const response = await apiRequest('/api/auth/profile/update/', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ username }),
+  });
+  if (response?.success === true) clearReadCache();
+  return response;
 }
 
 // LOGOUT - Mengirim refresh token dan Bearer access token
@@ -318,6 +333,7 @@ export async function sendAudioCurhat(
     );
   }
 
+  clearReadCache();
   return data;
 }
 
@@ -326,12 +342,12 @@ export async function getCurhatHistory(
   accessToken: string,
   page = 1
 ) {
-  return apiRequest(`/api/curhat/history/?page=${page}`, {
+  return readOnce(accessToken, `/api/curhat/history/?page=${page}`, () => apiRequest(`/api/curhat/history/?page=${page}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-  });
+  }));
 }
 
 // Mengambil detail riwayat berdasarkan ID curhat
