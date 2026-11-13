@@ -10,10 +10,11 @@ import {
 } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,6 +33,8 @@ export default function ProfileScreen() {
 
   const [loading, setLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const logoutRef = useRef(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -88,7 +91,9 @@ export default function ProfileScreen() {
   }, []);
 
   const handleLogout = async () => {
-    if (logoutLoading) return;
+    if (logoutRef.current) return;
+    logoutRef.current = true;
+    setShowLogoutConfirmation(false);
 
     try {
       setLogoutLoading(true);
@@ -105,6 +110,7 @@ export default function ProfileScreen() {
       await clearSession();
 
       setLogoutLoading(false);
+      logoutRef.current = false;
 
       router.replace('/login');
     }
@@ -271,7 +277,7 @@ export default function ProfileScreen() {
             styles.logoutItem,
             logoutLoading && styles.disabledButton,
           ]}
-          onPress={handleLogout}
+          onPress={() => setShowLogoutConfirmation(true)}
           disabled={logoutLoading}
         >
           <View style={styles.actionLeft}>
@@ -354,11 +360,58 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
       </View>
+      <Modal
+        visible={showLogoutConfirmation}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowLogoutConfirmation(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowLogoutConfirmation(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Tutup konfirmasi keluar"
+          />
+          <View style={styles.confirmCard} accessibilityViewIsModal>
+            <Ionicons name="log-out-outline" size={30} color="#8067B7" />
+            <Text style={styles.confirmTitle}>Keluar dari akun?</Text>
+            <Text style={styles.confirmDescription}>Kamu perlu masuk kembali untuk melanjutkan menggunakan Curhat.in.</Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                style={styles.confirmCancel}
+                onPress={() => setShowLogoutConfirmation(false)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.confirmCancelText}>Batal</Text>
+              </Pressable>
+              <Pressable
+                style={styles.confirmLogout}
+                onPress={() => void handleLogout()}
+                disabled={logoutLoading}
+                accessibilityRole="button"
+              >
+                <Text style={styles.confirmLogoutText}>Keluar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  confirmOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(63, 56, 74, 0.35)' },
+  confirmCard: { width: '100%', maxWidth: 360, borderRadius: 24, padding: 24, backgroundColor: '#FCFAFE', alignItems: 'center' },
+  confirmTitle: { fontSize: 20, fontWeight: '700', color: '#55416F', textAlign: 'center', marginTop: 14, marginBottom: 10 },
+  confirmDescription: { fontSize: 14, lineHeight: 21, color: '#817A89', textAlign: 'center', marginBottom: 24 },
+  confirmActions: { flexDirection: 'row', gap: 12 },
+  confirmCancel: { flex: 1, minHeight: 48, padding: 12, borderRadius: 15, borderWidth: 1, borderColor: '#D8CDE7', justifyContent: 'center', alignItems: 'center' },
+  confirmLogout: { flex: 1, minHeight: 48, padding: 12, borderRadius: 15, backgroundColor: '#8067B7', justifyContent: 'center', alignItems: 'center' },
+  confirmCancelText: { fontSize: 14, fontWeight: '700', color: '#8067B7' },
+  confirmLogoutText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   screen: {
     flex: 1,
     backgroundColor: '#F8F5FC',
