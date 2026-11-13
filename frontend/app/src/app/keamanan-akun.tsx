@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ApiError, changePassword } from '@/services/api';
+import { ApiError, changePassword, getProfile } from '@/services/api';
 import { clearSession, getAccessToken } from '@/services/session';
 
 export default function KeamananAkunScreen() {
@@ -17,6 +17,55 @@ export default function KeamananAkunScreen() {
   const [success, setSuccess] = useState('');
   const savingRef = useRef(false);
   const activeRef = useRef(false);
+  const [provider, setProvider] = useState<'google' | 'password' | null>(null);
+  const [profileError, setProfileError] = useState('');
+  const [openingGoogle, setOpeningGoogle] = useState(false);
+  const googleRef = useRef(false);
+  const [profileAttempt, setProfileAttempt] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setProvider(null);
+    setProfileError('');
+    void (async () => {
+      try {
+        const token = await getAccessToken();
+        if (!active) return;
+        if (!token) throw new ApiError('Sesi berakhir.', 401);
+        const response = await getProfile(token);
+        if (!active) return;
+        const value = response?.data?.auth_provider;
+        if (response?.success !== true || (value !== 'google' && value !== 'password')) {
+          throw new Error('Jenis akun belum dapat dipastikan.');
+        }
+        setProvider(value);
+      } catch (caught) {
+        if (!active) return;
+        if (caught instanceof ApiError && caught.status === 401) {
+          await clearSession();
+          if (active) router.replace({ pathname: '/login', params: { notice: 'Sesi kamu telah berakhir. Silakan masuk kembali.' } });
+          return;
+        }
+        setProfileError('Informasi keamanan akun belum dapat dimuat. Silakan coba lagi.');
+      }
+    })();
+    return () => { active = false; };
+  }, [profileAttempt]));
+
+  const openGoogleSecurity = async () => {
+    if (googleRef.current) return;
+    googleRef.current = true;
+    setOpeningGoogle(true);
+    setError('');
+    try {
+      await Linking.openURL('https://myaccount.google.com/security');
+    } catch {
+      if (activeRef.current) setError('Halaman Google belum dapat dibuka. Periksa koneksi dan coba lagi.');
+    } finally {
+      googleRef.current = false;
+      setOpeningGoogle(false);
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     activeRef.current = true;
@@ -30,7 +79,7 @@ export default function KeamananAkunScreen() {
   }, []));
 
   const savePassword = async () => {
-    if (savingRef.current) return;
+    if (savingRef.current || provider !== 'password') return;
     setError('');
     setSuccess('');
     if (!passwords.old || !passwords.next || !passwords.confirm) {
@@ -103,24 +152,24 @@ export default function KeamananAkunScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#8067B7" />
         </Pressable>
-        <Text style={styles.title}>{selected === 'privacy' ? 'Privasi Cerita' : selected === 'password' ? 'Ubah Kata Sandi' : 'Keamanan Akun'}</Text>
+        <Text style={styles.title}>{selected === 'privacy' ? 'Privasi Cerita' : selected === 'password' ? provider === 'google' ? 'Keamanan Akun Google' : provider === 'password' ? 'Ubah Kata Sandi' : 'Keamanan Akun' : 'Keamanan Akun'}</Text>
       </View>
 
       {!selected && (
       <>
       <Text style={styles.description}>Kelola keamanan dan akses akunmu.</Text>
 
-      <Pressable
+      {provider && <Pressable
         style={styles.menuCard}
         accessibilityRole="button"
         onPress={() => router.push({ pathname: '/keamanan-akun', params: { section: 'password' } })}
       >
         <Ionicons name="lock-closed-outline" size={22} color="#8067B7" />
         <View style={styles.menuContent}>
-          <Text style={styles.menuTitle}>Ubah Kata Sandi</Text>
-          <Text style={styles.menuDescription}>Perbarui kata sandi akunmu</Text>
+          <Text style={styles.menuTitle}>{provider === 'google' ? 'Keamanan Akun Google' : 'Ubah Kata Sandi'}</Text>
+          <Text style={styles.menuDescription}>{provider === 'google' ? 'Kelola keamanan akun melalui Google' : 'Perbarui kata sandi akunmu'}</Text>
         </View>
-      </Pressable>
+      </Pressable>}
 
       <Pressable
         style={styles.menuCard}
@@ -136,7 +185,32 @@ export default function KeamananAkunScreen() {
       </>
       )}
 
-      {selected === 'password' && (
+      {selected !== 'privacy' && !provider && (
+        <View style={styles.infoCard}>
+          {profileError ? <>
+            <Text style={styles.infoText}>{profileError}</Text>
+            <Pressable style={styles.saveButton} onPress={() => setProfileAttempt(value => value + 1)} accessibilityRole="button">
+              <Text style={styles.saveButtonText}>Coba Lagi</Text>
+            </Pressable>
+          </> : <ActivityIndicator color="#8067B7" accessibilityLabel="Memuat informasi akun" />}
+        </View>
+      )}
+
+      {selected === 'password' && provider === 'google' && (
+        <View style={styles.googleCard}>
+          <View style={styles.googleIcon}><Ionicons name="shield-checkmark-outline" size={30} color="#8067B7" /></View>
+          <Text style={styles.googleTitle}>Akunmu Terhubung dengan Google {'\uD83D\uDC9C'}</Text>
+          <Text style={styles.googleText}>Kamu masuk ke Curhat.in menggunakan akun Google, jadi tidak perlu membuat kata sandi khusus untuk aplikasi ini.</Text>
+          <Text style={styles.googleText}>Jika ingin mengubah kata sandi atau mengatur keamanan akun, kamu bisa melakukannya langsung melalui Google.</Text>
+          {!!error && <Text style={styles.formError} accessibilityRole="alert">{error}</Text>}
+          <Pressable style={styles.saveButton} onPress={() => void openGoogleSecurity()} disabled={openingGoogle} accessibilityRole="button">
+            {openingGoogle && <ActivityIndicator color="#FFFFFF" size="small" />}
+            <Text style={styles.saveButtonText}>{openingGoogle ? 'Membuka...' : 'Kelola Akun Google'}</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {selected === 'password' && provider === 'password' && (
         <View style={styles.passwordCard}>
           {([
             { key: 'old', label: 'Kata Sandi Lama', placeholder: 'Masukkan kata sandi lama' },
@@ -234,6 +308,10 @@ export default function KeamananAkunScreen() {
 }
 
 const styles = StyleSheet.create({
+  googleCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20, marginBottom: 14 },
+  googleIcon: { alignSelf: 'center', width: 60, height: 60, borderRadius: 30, backgroundColor: '#EEE5FA', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  googleTitle: { fontSize: 17, lineHeight: 25, fontWeight: '700', color: '#55416F', textAlign: 'center', marginBottom: 6 },
+  googleText: { fontSize: 14, lineHeight: 23, color: '#817A89', textAlign: 'center', marginTop: 14 },
   container: { flexGrow: 1, backgroundColor: '#F8F5FC', paddingHorizontal: 22 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   backButton: {
