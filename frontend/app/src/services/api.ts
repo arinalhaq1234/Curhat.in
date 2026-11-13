@@ -89,6 +89,14 @@ export async function getProfile(accessToken: string) {
   });
 }
 
+export async function changePassword(oldPassword: string, newPassword: string, accessToken: string) {
+  return apiRequest('/api/auth/change-password/', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  });
+}
+
 // LOGOUT - Mengirim refresh token dan Bearer access token
 export async function logoutUser(
   refreshToken: string,
