@@ -74,6 +74,19 @@ class RiwayatPrivacyTests(TestCase):
         self.assertEqual(audio_detail.data["data"]["audio_name"], self.private_values[4])
         self.assertNotIn(self.private_values[5], audio_detail.content.decode("utf-8"))
 
+    def test_history_query_count_does_not_grow_per_record(self):
+        client = self.api_for(self.owner)
+        RiwayatCurhat.objects.bulk_create([
+            RiwayatCurhat(user=self.owner, ringkasan_cerita="Test", audio_name="test.m4a")
+            for _ in range(18)
+        ])
+        # COUNT dan satu query halaman; tidak mengambil audio biner atau query per item.
+        with self.assertNumQueries(2):
+            response = client.get(reverse("curhat-history"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["data"]["results"]), 10)
+        self.assertNotIn("audio_file", response.content.decode())
+
     def test_other_user_and_non_owner_admin_cannot_read_by_id(self):
         for user in (self.other, self.admin):
             client = self.api_for(user)

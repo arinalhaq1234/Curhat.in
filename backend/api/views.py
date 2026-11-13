@@ -6,7 +6,9 @@ from io import BytesIO
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import DatabaseError
+from django.db import DatabaseError, IntegrityError, transaction
+from django.contrib.auth import get_user_model
+from django.contrib.auth.validators import UnicodeUsernameValidator
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -18,7 +20,7 @@ from rest_framework.pagination import PageNumberPagination
 from mutagen import MutagenError
 from mutagen.mp4 import MP4
 
-from .models import RiwayatCurhat
+from .models import GoogleIdentity, RiwayatCurhat
 from .serializers import (
     RegisterSerializer,
     RiwayatCurhatSerializer,
@@ -423,6 +425,7 @@ def login_user(request):
 @permission_classes([IsAuthenticated])
 def profile(request):
     user = request.user
+    auth_provider = "google" if GoogleIdentity.objects.filter(user=user).exists() else "password"
 
     return Response(
         {
@@ -434,10 +437,43 @@ def profile(request):
                 "email": user.email,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
+                "auth_provider": auth_provider,
             }
         },
         status=status.HTTP_200_OK
     )
+
+
+# =========================================================
+# EDIT PROFIL
+# =========================================================
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    username = request.data.get("username") if isinstance(request.data, Mapping) else None
+    if not isinstance(username, str) or not username.strip():
+        return Response({"success": False, "message": "Nama pengguna wajib diisi."}, status=400)
+    username = username.strip()
+    if len(username) > 150:
+        return Response({"success": False, "message": "Nama pengguna maksimal 150 karakter."}, status=400)
+    try:
+        UnicodeUsernameValidator()(username)
+    except DjangoValidationError:
+        return Response({"success": False, "message": "Gunakan huruf, angka, atau karakter @ . + - _ untuk nama pengguna."}, status=400)
+    User = get_user_model()
+    if User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists():
+        return Response({"success": False, "message": "Nama pengguna sudah digunakan."}, status=400)
+    try:
+        with transaction.atomic():
+            request.user.username = username
+            request.user.save(update_fields=["username"])
+    except IntegrityError:
+        return Response({"success": False, "message": "Nama pengguna sudah digunakan."}, status=400)
+    except DatabaseError:
+        return Response({"success": False, "message": "Profil belum dapat disimpan. Silakan coba lagi."}, status=503)
+    return Response({"success": True, "message": "Profil berhasil diperbarui.",
+                     "data": {"username": request.user.username, "email": request.user.email}})
 
 
 # =========================================================

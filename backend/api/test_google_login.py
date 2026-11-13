@@ -15,6 +15,86 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import GoogleIdentity
 
 
+class ProfileAuthProviderTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_password_account_is_not_inferred_from_username_or_email(self):
+        user = get_user_model().objects.create_user(
+            username="google_local", email="local@gmail.com", password="Test-only-123!",
+        )
+        self.client.force_authenticate(user)
+        response = self.client.get("/api/auth/profile/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"]["auth_provider"], "password")
+
+    def test_google_identity_is_the_source_of_truth(self):
+        user = get_user_model().objects.create_user(username="ordinary_name", password=None)
+        GoogleIdentity.objects.create(user=user, subject="profile-test-sub", email="person@example.com")
+        self.client.force_authenticate(user)
+        response = self.client.get("/api/auth/profile/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"]["auth_provider"], "google")
+        self.assertNotIn("subject", response.data["data"])
+
+    def test_profile_still_requires_authentication(self):
+        self.assertEqual(self.client.get("/api/auth/profile/").status_code, 401)
+
+
+class EditProfileTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="original", email="original@example.com", password="Test-only-123!",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_username_updates_without_changing_other_fields(self):
+        previous_password = self.user.password
+        response = self.client.patch("/api/auth/profile/update/", {
+            "username": "  updated  ", "email": "other@example.com", "is_staff": True,
+        }, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "updated")
+        self.assertEqual(self.user.email, "original@example.com")
+        self.assertEqual(self.user.password, previous_password)
+        self.assertFalse(self.user.is_staff)
+        self.assertEqual(self.client.get("/api/auth/profile/").data["data"]["username"], "updated")
+
+    def test_invalid_values_are_rejected(self):
+        for username in [None, "", "   ", 42, "has space", "a" * 151]:
+            with self.subTest(username=username):
+                response = self.client.patch("/api/auth/profile/update/", {"username": username}, format="json")
+                self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "original")
+
+    def test_duplicate_username_is_rejected_case_insensitively(self):
+        get_user_model().objects.create_user(username="Taken")
+        response = self.client.patch("/api/auth/profile/update/", {"username": "taken"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_current_username_is_allowed(self):
+        self.assertEqual(self.client.patch("/api/auth/profile/update/", {"username": "original"}, format="json").status_code, 200)
+
+    def test_google_identity_is_preserved(self):
+        self.user.set_unusable_password()
+        self.user.save(update_fields=["password"])
+        identity = GoogleIdentity.objects.create(user=self.user, subject="edit-profile-sub", email=self.user.email)
+        response = self.client.patch("/api/auth/profile/update/", {"username": "google_renamed"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        identity.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(identity.subject, "edit-profile-sub")
+        self.assertFalse(self.user.has_usable_password())
+        self.assertEqual(self.client.get("/api/auth/profile/").data["data"]["auth_provider"], "google")
+
+    def test_unauthenticated_update_is_rejected(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.patch("/api/auth/profile/update/", {"username": "changed"}, format="json").status_code, 401)
+
+
 @override_settings(GOOGLE_CLIENT_ID="mobile-test.apps.googleusercontent.com")
 class GoogleLoginTests(TestCase):
     @classmethod
