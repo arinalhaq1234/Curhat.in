@@ -1,7 +1,8 @@
+import { draftOwner, readDraft, writeDraft, removeDraft, prepareAnalysis } from '@/services/drafts';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -71,6 +72,7 @@ export default function CurhatAudioScreen() {
     {
       ...RecordingPresets.HIGH_QUALITY,
       isMeteringEnabled: true,
+      directory: 'document',
       // ADTS dapat diputar saat dijeda tanpa memfinalisasi recorder Android.
       // Codec/kualitas tetap AAC; api.ts mengemasnya menjadi M4A saat upload.
       android: {
@@ -92,7 +94,30 @@ export default function CurhatAudioScreen() {
 
   const playerStatus = useAudioPlayerStatus(audioPlayer);
 
-  const processingRef = useRef(false);
+  const ownerRef = useRef<string | null>(null);
+   const [draftReady, setDraftReady] = useState(false);
+   const [retryAnalysis, setRetryAnalysis] = useState(false);
+   useFocusEffect(useCallback(() => {
+     let active = true;
+     setDraftReady(false);
+     void draftOwner().then(owner => {
+       if (!active) return;
+       ownerRef.current = owner;
+       const draft = readDraft(owner, 'audio');
+       if (draft?.uri && new File(draft.uri).exists) {
+         setRecordingUri(draft.uri);
+         setRecordedDuration(draft.duration ?? 0);
+         setFileSize(new File(draft.uri).size);
+         phaseRef.current = 'finished';
+         audioPlayer.replace({ uri: draft.uri });
+         setRetryAnalysis(!!draft.baseline);
+       }
+       setDraftReady(true);
+     }).catch(() => { if (active) setError('Rekaman belum dapat dimuat. Silakan masuk kembali.'); });
+     return () => { active = false; ownerRef.current = null; setDraftReady(false); audioPlayer.pause(); setRecordingUri(null); };
+   }, []));
+
+   const processingRef = useRef(false);
   const stoppingRef = useRef(false);
   const submittingRef = useRef(false);
   const latestDurationRef = useRef(0);
@@ -129,7 +154,15 @@ export default function CurhatAudioScreen() {
     }
   }, [hasActiveRecording, recorderState.durationMillis]);
 
-  const finalDuration = recordingUri && /\.aac$/i.test(recordingUri)
+  useEffect(() => {
+     if (!hasActiveRecording || !ownerRef.current || !audioRecorder.uri) return;
+     try {
+       writeDraft(ownerRef.current, { kind: 'audio', uri: audioRecorder.uri,
+         duration: Math.min(MAX_DURATION_MS, Math.max(latestDurationRef.current, recorderState.durationMillis)) });
+     } catch { setError('Draft belum dapat disimpan. Jangan tutup aplikasi; periksa ruang penyimpanan.'); }
+   }, [hasActiveRecording, recorderState.durationMillis]);
+
+   const finalDuration = recordingUri && /\.aac$/i.test(recordingUri)
     ? Math.min(recordedDuration, MAX_DURATION_MS)
     : recordedDuration;
   const currentDuration = hasActiveRecording
@@ -185,6 +218,7 @@ export default function CurhatAudioScreen() {
   // MULAI REKAMAN / REKAM ULANG
   const startRecording = async () => {
     if (
+      !draftReady ||
       processingRef.current ||
       submittingRef.current ||
       hasActiveRecording ||
@@ -225,6 +259,9 @@ export default function CurhatAudioScreen() {
       // Mulai native dahulu; jika gagal, file rekaman sebelumnya tetap tersedia.
       await audioRecorder.record();
       startedForAttempt = true;
+       if (ownerRef.current && audioRecorder.uri) {
+         writeDraft(ownerRef.current, { kind: 'audio', uri: audioRecorder.uri, duration: 0 });
+       }
       phaseRef.current = 'recording';
       setHasActiveRecording(true);
       setIsPaused(false);
@@ -403,7 +440,9 @@ export default function CurhatAudioScreen() {
 
       const size = file.size;
 
-      setRecordingUri(uri);
+      if (!ownerRef.current) throw new Error('Identitas akun belum tersedia.');
+       writeDraft(ownerRef.current, { kind: 'audio', uri, duration });
+       setRecordingUri(uri);
       setRecordedDuration(duration);
       setFileSize(size);
 
@@ -620,6 +659,7 @@ export default function CurhatAudioScreen() {
       latestDurationRef.current = 0;
       stoppingRef.current = false;
       phaseRef.current = 'idle';
+      if (ownerRef.current) removeDraft(ownerRef.current, 'audio');
       setWaveform(Array(31).fill(0.04));
     } catch (err) {
       console.log('AUDIO DELETE ERROR:', err);
@@ -713,7 +753,13 @@ export default function CurhatAudioScreen() {
     setLoading(true);
 
     try {
-      // MENGAMBIL TOKEN LOGIN
+      const owner = ownerRef.current;
+       if (!owner) throw new Error('Identitas akun belum tersedia. Silakan masuk kembali.');
+       const previous = readDraft(owner, 'audio');
+       writeDraft(owner, { kind: 'audio', uri: uploadUri, duration: uploadDuration,
+        baseline: previous?.uri === uploadUri ? previous.baseline : undefined,
+        uploadName: previous?.uri === uploadUri ? previous.uploadName : undefined });
+       // MENGAMBIL TOKEN LOGIN
       const accessToken = await getAccessToken();
 
       if (!accessToken) {
@@ -723,13 +769,14 @@ export default function CurhatAudioScreen() {
           pathname: '/login',
           params: {
             notice:
-              'Sesi kamu telah berakhir. Silakan masuk kembali.',
+              'Sesi kamu telah berakhir. Rekamanmu tetap tersimpan. Silakan masuk kembali.',
           },
         });
 
         return;
       }
 
+      if (await draftOwner() !== owner) throw new Error('Akun telah berubah. Buka kembali cerita dari Home.');
       // HENTIKAN PLAYBACK SEBELUM UPLOAD
       audioPlayer.pause();
 
@@ -761,9 +808,12 @@ export default function CurhatAudioScreen() {
 
       // KIRIM AUDIO KE BACKEND
       // Tanpa batas timeout buatan.
-      const response = await sendAudioCurhat(
+      const recovered = await prepareAnalysis(owner, 'audio', accessToken);
+      setRetryAnalysis(true);
+      const response = recovered ? { data: recovered } : await sendAudioCurhat(
         uploadUri,
-        accessToken
+        accessToken,
+        readDraft(owner, 'audio')?.uploadName
       );
 
       const result = response?.data ?? response;
@@ -782,6 +832,9 @@ export default function CurhatAudioScreen() {
         return;
       }
 
+      if (ownerRef.current !== owner || await draftOwner() !== owner ||
+          readDraft(owner, 'audio')?.uri !== uploadUri) return;
+      removeDraft(owner, 'audio');
       // NAVIGASI KE HALAMAN HASIL ANALISIS
       router.push({
         pathname: '/hasil',
@@ -806,6 +859,7 @@ export default function CurhatAudioScreen() {
         },
       });
     } catch (err: any) {
+      setRetryAnalysis(true);
       // SESI LOGIN KEDALUWARSA
       if (err?.status === 401) {
         await clearSession();
@@ -814,7 +868,7 @@ export default function CurhatAudioScreen() {
           pathname: '/login',
           params: {
             notice:
-              'Sesi kamu telah berakhir. Silakan masuk kembali.',
+              'Sesi kamu telah berakhir. Rekamanmu tetap tersimpan. Silakan masuk kembali.',
           },
         });
 
@@ -1068,7 +1122,7 @@ export default function CurhatAudioScreen() {
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color="#9F72D3" />
             <Text style={styles.loadingText}>
-              {submitting ? 'Sedang menganalisis rekamanmu...' : 'Sedang memproses rekaman...'}
+              {submitting ? 'Sedang menganalisis rekamanmu. Rekaman tetap tersimpan di perangkat ini.' : 'Sedang memproses rekaman...'}
             </Text>
           </View>
         )}
@@ -1078,7 +1132,7 @@ export default function CurhatAudioScreen() {
           disabled={loading || (hasActiveRecording && !isPaused)}
           accessibilityRole="button"
         >
-          <Text style={styles.primaryButtonText}>Kirim Rekaman</Text>
+          <Text style={styles.primaryButtonText}>{retryAnalysis ? 'Coba Analisis Lagi' : 'Kirim Rekaman'}</Text>
         </Pressable>
         <Pressable
           style={[styles.secondaryButton, (loading || hasActiveRecording || !recordingUri) && styles.disabledButton]}

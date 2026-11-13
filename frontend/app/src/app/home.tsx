@@ -1,3 +1,4 @@
+import { draftOwner, readDraft, Draft } from '@/services/drafts';
 import { getAccessToken } from '@/services/session';
 import { ApiError, getCurhatHistory, getCurhatHistoryDetail } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ type LatestHistory = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [checkingSession, setCheckingSession] = useState(true);
   const [latestHistory, setLatestHistory] = useState<LatestHistory | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function HomeScreen() {
   const openingRef = useRef(false);
 
   const loadLatestHistory = useCallback(async () => {
+    setDrafts([]);
     const requestId = ++requestIdRef.current;
     setHistoryLoading(true);
     setHistoryError('');
@@ -48,6 +51,11 @@ export default function HomeScreen() {
       }
       hasSession = true;
       setCheckingSession(false);
+       const owner = await draftOwner();
+       const saved = [readDraft(owner, 'text'), readDraft(owner, 'audio')]
+         .filter((draft): draft is Draft => !!draft && (draft.kind === 'audio' ? !!draft.uri : !!draft.text?.trim()));
+       if (requestId !== requestIdRef.current) return;
+       setDrafts(saved);
 
       const response = await getCurhatHistory(accessToken);
       if (requestId !== requestIdRef.current) return;
@@ -160,7 +168,7 @@ export default function HomeScreen() {
             </Text>
 
             <Text style={styles.title}>
-              Apa kabar hari ini?
+              Senang kamu ada di sini!
             </Text>
           </View>
 
@@ -178,14 +186,33 @@ export default function HomeScreen() {
 
         <View style={styles.heroCard}>
           <Text style={styles.heroTitle}>
-            Bagaimana perasaanmu hari ini?
+            Setiap cerita punya tempat {'\uD83D\uDC9C'}
           </Text>
 
           <Text style={styles.heroText}>
-            Yuk, ceritakan apa yang sedang kamu rasakan.
-            Curhat.in siap mendengarkan.
+            Apa pun yang kamu rasakan, Curhat.in siap menemanimu bercerita.
           </Text>
         </View>
+
+        {drafts.map(draft => (
+          <View key={draft.kind} style={styles.draftCard}>
+            <View style={styles.draftHeader}>
+              <Ionicons name={draft.kind === 'audio' ? 'mic-outline' : 'document-text-outline'} size={19} color="#8661B5" />
+              <Text style={styles.draftTitle}>Cerita kamu masih tersimpan {'\uD83D\uDC9C'}</Text>
+            </View>
+              <Text style={styles.draftDescription}>
+                {draft.baseline ? 'Analisis sebelumnya belum berhasil diselesaikan. ' : ''}
+                {draft.kind === 'audio' ? 'Rekamanmu' : 'Ceritamu'} tetap tersimpan di perangkat ini.
+              </Text>
+              <Pressable
+                style={styles.draftAction}
+                accessibilityRole="button"
+                onPress={() => router.push(draft.kind === 'audio' ? '/curhat-audio' : '/curhat-text')}
+              >
+                <Text style={styles.draftActionText}>Lanjutkan Cerita</Text>
+              </Pressable>
+          </View>
+        ))}
 
         <Text style={styles.sectionTitle}>
           Mulai Curhat
@@ -419,6 +446,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
   },
+
+  draftCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4D6F5',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 18,
+  },
+  draftHeader: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  draftTitle: { flex: 1, fontSize: 15, lineHeight: 22, fontWeight: '700', color: '#4A3E59' },
+  draftDescription: { fontSize: 13, lineHeight: 20, color: '#81738F', marginTop: 10 },
+  draftAction: { marginTop: 12, paddingVertical: 14, paddingHorizontal: 16, minHeight: 48, borderRadius: 15, backgroundColor: '#8661B5', alignItems: 'center', justifyContent: 'center' },
+  draftActionText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 
   heroCard: {
     backgroundColor: '#EEE5FA',

@@ -216,7 +216,8 @@ export function packageAacAsM4a(input: Uint8Array): Uint8Array {
 
 export async function sendAudioCurhat(
   audioUri: string,
-  accessToken: string
+  accessToken: string,
+  fileName?: string
 ) {
   if (!API_URL) {
     throw new Error('Alamat backend belum dikonfigurasi.');
@@ -244,7 +245,7 @@ export async function sendAudioCurhat(
   // Jangan memakai File.slice(): metode itu membuat Blob dari Uint8Array,
   // yang belum didukung Blob React Native pada sebagian runtime Android.
   const audioPart = {
-    name: `curhat-${Date.now()}.m4a`,
+    name: fileName ?? `curhat-${Date.now()}.m4a`,
     type: 'audio/mp4',
     bytes: () => packagedAudio ? Promise.resolve(packagedAudio) : file.bytes(),
   };

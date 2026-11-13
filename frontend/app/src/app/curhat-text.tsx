@@ -1,6 +1,7 @@
+import { draftOwner, readDraft, writeDraft, removeDraft, prepareAnalysis } from '@/services/drafts';
 
-import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -27,10 +28,27 @@ export default function CurhatTextScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const submittingRef = useRef(false);
+  const ownerRef = useRef<string | null>(null);
+   const [draftReady, setDraftReady] = useState(false);
+   const [retryAnalysis, setRetryAnalysis] = useState(false);
+   useFocusEffect(useCallback(() => {
+     let active = true;
+     setDraftReady(false);
+     void draftOwner().then(owner => {
+       if (!active) return;
+       ownerRef.current = owner;
+       const draft = readDraft(owner, 'text');
+       setText(draft?.text ?? '');
+       setRetryAnalysis(!!draft?.baseline);
+       setDraftReady(true);
+     }).catch(() => { if (active) setError('Cerita belum dapat dimuat. Silakan masuk kembali.'); });
+     return () => { active = false; ownerRef.current = null; setDraftReady(false); setText(''); };
+   }, []));
+
+   const submittingRef = useRef(false);
 
   const handleSubmit = async () => {
-    if (submittingRef.current) {
+    if (submittingRef.current || !draftReady || !ownerRef.current) {
       return;
     }
 
@@ -65,26 +83,29 @@ export default function CurhatTextScreen() {
     try {
       setLoading(true);
 
+      const owner = ownerRef.current!;
+      const previous = readDraft(owner, 'text');
+      writeDraft(owner, { kind: 'text', text, baseline: previous?.text?.trim() === trimmedText ? previous.baseline : undefined });
       const accessToken = await getAccessToken();
 
       // SESI LOGIN TIDAK TERSEDIA
       if (!accessToken) {
         await clearSession();
-        router.replace('/login');
+        router.replace({ pathname: '/login', params: { notice: 'Silakan masuk kembali. Ceritamu tetap tersimpan di perangkat ini.' } });
         return;
       }
 
+      if (await draftOwner() !== owner) throw new Error('Akun telah berubah. Buka kembali cerita dari Home.');
       // KIRIM CERITA KE BACKEND
       // Tanpa timeout 3 menit
-      const response = await sendTextCurhat(
+      const recovered = await prepareAnalysis(owner, 'text', accessToken);
+      setRetryAnalysis(true);
+      const response = recovered ? { data: recovered } : await sendTextCurhat(
         trimmedText,
         accessToken
       );
 
-      console.log(
-        'CURHAT TEXT RESPONSE:',
-        response
-      );
+
 
       const result = response?.data ?? response;
 
@@ -99,11 +120,14 @@ export default function CurhatTextScreen() {
         )
       ) {
         setError(
-          'Hasil analisis belum tersedia atau belum lengkap. Ceritamu tetap tersimpan di halaman ini. Silakan coba lagi.'
+          'Hasil analisis belum tersedia atau belum lengkap. Ceritamu tetap tersimpan di perangkat ini. Silakan coba lagi.'
         );
         return;
       }
 
+      if (ownerRef.current !== owner || await draftOwner() !== owner ||
+          readDraft(owner, 'text')?.text !== text) return;
+      removeDraft(owner, 'text');
       // NAVIGASI KE HALAMAN HASIL ANALISIS
       router.push({
         pathname: '/hasil',
@@ -123,10 +147,7 @@ export default function CurhatTextScreen() {
         },
       });
     } catch (error: any) {
-      console.log(
-        'CURHAT TEXT ERROR:',
-        error
-      );
+      setRetryAnalysis(true);
 
       // SESI LOGIN BERAKHIR
       if (error?.status === 401) {
@@ -135,7 +156,7 @@ export default function CurhatTextScreen() {
         router.replace({
           pathname: '/login',
           params: {
-            notice: 'Sesi kamu telah berakhir. Silakan masuk kembali.',
+            notice: 'Sesi kamu telah berakhir. Ceritamu tetap tersimpan. Silakan masuk kembali.',
           },
         });
 
@@ -233,7 +254,15 @@ export default function CurhatTextScreen() {
       <TextInput
         value={text}
         onChangeText={(value) => {
-          setText(value);
+          if (!ownerRef.current) return;
+           try {
+             const previous = readDraft(ownerRef.current, 'text');
+             writeDraft(ownerRef.current, { kind: 'text', text: value, baseline: previous?.text?.trim() === value.trim() ? previous.baseline : undefined });
+             setText(value);
+           } catch {
+             setText(value);
+             setError('Draft belum dapat disimpan. Jangan tutup halaman ini; periksa ruang penyimpanan.');
+           }
 
           if (error) {
             setError('');
@@ -249,7 +278,7 @@ export default function CurhatTextScreen() {
             ? styles.textAreaError
             : null,
         ]}
-        editable={!loading}
+        editable={!loading && draftReady}
         maxLength={MAX_LENGTH}
       />
 
@@ -289,9 +318,6 @@ export default function CurhatTextScreen() {
             Sedang menganalisis ceritamu...
           </Text>
 
-          <Text style={styles.loadingText}>
-            Tunggu sebentar, ya.
-          </Text>
         </View>
       ) : (
         <>
@@ -305,7 +331,7 @@ export default function CurhatTextScreen() {
             disabled={loading}
           >
             <Text style={styles.primaryButtonText}>
-              Kirim Curhat
+              {retryAnalysis ? 'Coba Analisis Lagi' : 'Kirim Curhat'}
             </Text>
           </Pressable>
 
