@@ -3,7 +3,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ApiError, changePassword, getProfile } from '@/services/api';
+import { ApiError, changePassword, getCachedProfile, getProfile } from '@/services/api';
 import { clearSession, getAccessToken } from '@/services/session';
 
 export default function KeamananAkunScreen() {
@@ -32,7 +32,13 @@ export default function KeamananAkunScreen() {
         const token = await getAccessToken();
         if (!active) return;
         if (!token) throw new ApiError('Sesi berakhir.', 401);
-        const response = await getProfile(token);
+        // Profil sudah memuat jenis akun dari backend. Pakai snapshot sesi
+        // yang sama agar perpindahan menu tidak menunggu request berulang.
+        const cached = getCachedProfile(token);
+        const cachedProvider = cached?.data?.auth_provider;
+        const response = cached?.success === true &&
+          (cachedProvider === 'google' || cachedProvider === 'password')
+          ? cached : await getProfile(token);
         if (!active) return;
         const value = response?.data?.auth_provider;
         if (response?.success !== true || (value !== 'google' && value !== 'password')) {
@@ -185,14 +191,12 @@ export default function KeamananAkunScreen() {
       </>
       )}
 
-      {selected !== 'privacy' && !provider && (
+      {selected !== 'privacy' && !provider && !!profileError && (
         <View style={styles.infoCard}>
-          {profileError ? <>
             <Text style={styles.infoText}>{profileError}</Text>
             <Pressable style={styles.saveButton} onPress={() => setProfileAttempt(value => value + 1)} accessibilityRole="button">
               <Text style={styles.saveButtonText}>Coba Lagi</Text>
             </Pressable>
-          </> : <ActivityIndicator color="#8067B7" accessibilityLabel="Memuat informasi akun" />}
         </View>
       )}
 

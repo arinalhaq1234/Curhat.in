@@ -10,8 +10,8 @@ import {
   getRefreshToken,
 } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -37,6 +37,18 @@ export default function ProfileScreen() {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const logoutRef = useRef(false);
   const [error, setError] = useState('');
+  const { profileUpdated } = useLocalSearchParams<{ profileUpdated?: string }>();
+  const handledUpdate = useRef<string | undefined>(undefined);
+  const [showProfileSuccess, setShowProfileSuccess] = useState(false);
+  useEffect(() => {
+    // Mulai hitung saat Profil terlihat, bukan selama menunggu data profil.
+    if (loading) { setShowProfileSuccess(false); return; }
+    if (!profileUpdated || handledUpdate.current === profileUpdated) return;
+    handledUpdate.current = profileUpdated;
+    setShowProfileSuccess(true);
+    const timer = setTimeout(() => setShowProfileSuccess(false), 5000);
+    return () => clearTimeout(timer);
+  }, [loading, profileUpdated]);
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -189,6 +201,13 @@ export default function ProfileScreen() {
         <Text style={styles.pageTitle}>
           Profil
         </Text>
+
+        {showProfileSuccess && (
+          <View style={styles.profileSuccess} accessibilityLiveRegion="polite">
+            <Ionicons name="checkmark-circle-outline" size={21} color="#8067B7" />
+            <Text style={styles.profileSuccessText}>Profil berhasil diperbarui.</Text>
+          </View>
+        )}
 
         <Pressable style={styles.profileHeader} onPress={() => router.push('/edit-profil')} disabled={logoutLoading} accessibilityRole="button" accessibilityLabel="Edit Profil">
           <View style={styles.avatar}>
@@ -421,6 +440,8 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  profileSuccess: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EEE5FA', borderRadius: 16, padding: 14, marginBottom: 16 },
+  profileSuccessText: { flex: 1, fontSize: 13, lineHeight: 20, color: '#55416F' },
   confirmOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(63, 56, 74, 0.35)' },
   confirmCard: { width: '100%', maxWidth: 360, borderRadius: 24, padding: 24, backgroundColor: '#FCFAFE', alignItems: 'center' },
   confirmTitle: { fontSize: 20, fontWeight: '700', color: '#55416F', textAlign: 'center', marginTop: 14, marginBottom: 10 },

@@ -1,11 +1,13 @@
 import { draftOwner, readDraft, writeDraft, removeDraft, prepareAnalysis } from '@/services/drafts';
+import AnalysisWaiting from '@/components/analysis-waiting';
 
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
+  AppState,
   BackHandler,
   Modal,
   Pressable,
@@ -27,7 +29,7 @@ import {
 
 import { File, Paths } from 'expo-file-system';
 
-import { sendAudioCurhat } from '@/services/api';
+import { ApiError, formatCurhatFailure, sendAudioCurhat } from '@/services/api';
 import {
   clearSession,
   getAccessToken,
@@ -38,26 +40,25 @@ const MAX_DURATION_MS = 10 * 60 * 1000;
 const MAX_FILE_SIZE = 15_000_000;
 
 const formatAudioWarning = (message: string) => {
-  // Alasan spesifik hanya ditampilkan jika backend memang menyebutkannya.
-  if (/lagu|musik|instrumen/i.test(message)) {
-    return 'Rekaman terdengar berisi lagu atau musik. Coba rekam ulang dan ceritakan pengalaman atau perasaanmu sendiri tanpa musik latar.';
+  // Jangan menyimpulkan kategori dari kata dalam saran, contoh, atau negasi.
+  // Backend sudah memetakan alasan AI menjadi pesan khusus untuk pengguna.
+  if (/^file yang diberikan bukan rekaman curhatan\.?$/i.test(message.trim())) {
+    return 'Isi rekaman belum sesuai untuk analisis curhat. Silakan rekam ulang.';
   }
-  if (/berisik|bising|ramai|kebisingan|tidak (?:dapat )?terdengar|tidak (?:dapat )?dipahami|suara.*(?:tidak|kurang) jelas/i.test(message)) {
-    return 'Curhatanmu belum terdengar jelas. Coba rekam ulang di tempat yang lebih tenang, hindari keramaian, dan dekatkan mikrofon saat bercerita.';
-  }
-  if (/materi|presentasi|ceramah|pembelajaran|pelajaran/i.test(message)) {
-    return 'Rekaman terdengar seperti penyampaian materi atau presentasi. Coba ceritakan pengalaman dan perasaanmu sendiri dengan kata-katamu, ya.';
-  }
-  if (/bukan.*curhat|tidak.*(?:curhat|percakapan)|curhat.*(?:tidak|belum).*dikenali/i.test(message)) {
-    return 'Rekaman belum dikenali sebagai curhatan. Coba bercerita dengan jelas di tempat tenang. Hindari lagu, musik, atau pembacaan materi/presentasi.';
-  }
-  return message || 'Rekaman belum dapat diproses. Pastikan suara terdengar jelas dan rekaman berisi ceritamu sendiri.';
+  return message || 'Rekaman belum dapat diproses. Pastikan suara terdengar jelas, lalu coba lagi.';
 };
 
 export default function CurhatAudioScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [waitingLong, setWaitingLong] = useState(false);
+  useEffect(() => {
+    setWaitingLong(false);
+    if (!submitting) return;
+    const timer = setTimeout(() => setWaitingLong(true), 2 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [submitting]);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [recordedDuration, setRecordedDuration] = useState(0);
   const [fileSize, setFileSize] = useState<number | null>(null);
@@ -93,14 +94,46 @@ export default function CurhatAudioScreen() {
   });
 
   const playerStatus = useAudioPlayerStatus(audioPlayer);
+  const playerRef = useRef<typeof audioPlayer | null>(null);
+  const focusedRef = useRef(false);
+
+  // Layout cleanup mendahului pelepasan otomatis objek native oleh hook Expo.
+  // Callback lama selalu memakai instance aktif, termasuk setelah Fast Refresh.
+  useLayoutEffect(() => {
+    playerRef.current = audioPlayer;
+    return () => {
+      if (playerRef.current === audioPlayer) playerRef.current = null;
+    };
+  }, [audioPlayer]);
+
+  const runPlayer = useCallback(async (
+    action: (player: typeof audioPlayer) => void | Promise<void>,
+    allowBlur = false
+  ): Promise<boolean> => {
+    const player = playerRef.current;
+    if (!player || (!allowBlur && !focusedRef.current)) return false;
+    try {
+      await action(player);
+      return playerRef.current === player;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      if (/already released|shared object.*released/i.test(message) && playerRef.current === player) {
+        playerRef.current = null;
+      }
+      // Pemutar tidak boleh menggagalkan penyimpanan/upload atau cleanup halaman.
+      return false;
+    }
+  }, []);
+  const pausePlayer = useCallback(() => runPlayer(player => player.pause(), true), [runPlayer]);
 
   const ownerRef = useRef<string | null>(null);
    const [draftReady, setDraftReady] = useState(false);
    const [retryAnalysis, setRetryAnalysis] = useState(false);
    useFocusEffect(useCallback(() => {
      let active = true;
+     focusedRef.current = true;
      setDraftReady(false);
-     void draftOwner().then(owner => {
+     void draftOwner().then(async owner => {
        if (!active) return;
        ownerRef.current = owner;
        const draft = readDraft(owner, 'audio');
@@ -109,13 +142,22 @@ export default function CurhatAudioScreen() {
          setRecordedDuration(draft.duration ?? 0);
          setFileSize(new File(draft.uri).size);
          phaseRef.current = 'finished';
-         audioPlayer.replace({ uri: draft.uri });
+         const playable = await runPlayer(player => player.replace({ uri: draft.uri! }));
+         if (!active) return;
+         if (!playable) setError('Pemutar belum tersedia. Rekaman tetap tersimpan dan bisa dikirim untuk analisis.');
          setRetryAnalysis(!!draft.baseline);
        }
        setDraftReady(true);
      }).catch(() => { if (active) setError('Rekaman belum dapat dimuat. Silakan masuk kembali.'); });
-     return () => { active = false; ownerRef.current = null; setDraftReady(false); audioPlayer.pause(); setRecordingUri(null); };
-   }, []));
+     return () => {
+       active = false;
+       focusedRef.current = false;
+       ownerRef.current = null;
+       setDraftReady(false);
+       void pausePlayer();
+       setRecordingUri(null);
+     };
+   }, [pausePlayer, runPlayer]));
 
    const processingRef = useRef(false);
   const stoppingRef = useRef(false);
@@ -124,6 +166,7 @@ export default function CurhatAudioScreen() {
   const previewUriRef = useRef<string | null>(null);
   // Ref berubah langsung, sehingga handler dengan state React lama tetap aman.
   const phaseRef = useRef<'idle' | 'recording' | 'paused' | 'finished'>('idle');
+  const stopAtLimitRef = useRef<() => Promise<unknown>>(async () => {});
 
   const isRecording = recorderState.isRecording;
   const isPlaying = playerStatus.playing;
@@ -185,10 +228,10 @@ export default function CurhatAudioScreen() {
   };
 
   const resetPlayback = async () => {
-    audioPlayer.pause();
+    await pausePlayer();
 
     try {
-      await audioPlayer.seekTo(0);
+      await runPlayer(player => player.seekTo(0));
     } catch (err) {
       console.log('AUDIO SEEK ERROR:', err);
     }
@@ -206,8 +249,8 @@ export default function CurhatAudioScreen() {
     }
   };
 
-  const clearPreview = () => {
-    audioPlayer.pause();
+  const clearPreview = async () => {
+    await pausePlayer();
     // Native Android pada build ini menolak replace(null). Player dijeda;
     // sumber baru dipasang hanya ketika URI rekaman/preview tersedia.
     if (previewUriRef.current) removeAudioFile(previewUriRef.current);
@@ -252,7 +295,7 @@ export default function CurhatAudioScreen() {
         playsInSilentMode: true,
       });
 
-      clearPreview();
+      await clearPreview();
       await audioRecorder.prepareToRecordAsync();
       preparedForAttempt = true;
 
@@ -361,7 +404,7 @@ export default function CurhatAudioScreen() {
         return;
       }
       if (status.isRecording) return;
-      clearPreview();
+      await clearPreview();
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       // Jangan prepare ulang: record() memanggil MediaRecorder.resume() saat paused.
       await audioRecorder.record();
@@ -420,7 +463,7 @@ export default function CurhatAudioScreen() {
     setError('');
 
     try {
-      clearPreview();
+      await clearPreview();
       await audioRecorder.stop();
       phaseRef.current = 'finished';
       setHasActiveRecording(false);
@@ -454,7 +497,10 @@ export default function CurhatAudioScreen() {
         playsInSilentMode: true,
       });
 
-      audioPlayer.replace({ uri });
+      const playable = await runPlayer(player => player.replace({ uri }));
+      if (!playable && focusedRef.current) {
+        setError('Pemutar belum tersedia. Rekaman tetap tersimpan dan bisa dikirim untuk analisis.');
+      }
 
       if (size <= 0) {
         setError('File rekaman kosong. Silakan rekam ulang.');
@@ -477,25 +523,34 @@ export default function CurhatAudioScreen() {
     }
   };
 
-  // OTOMATIS SELESAI SAAT 10 MENIT
+  useLayoutEffect(() => {
+    stopAtLimitRef.current = () => stopRecording(true, true);
+  });
+
+  // Watchdog terpisah dari render/polling UI. Jika recorder masih sibuk pada
+  // batas waktu, coba lagi pada tick berikutnya; jangan kehilangan auto-stop.
   useEffect(() => {
-    if (
-      hasActiveRecording &&
-      isRecording &&
-      !stoppingRef.current &&
-      !processingRef.current
-    ) {
-      // Jadwalkan sisa waktu, jangan menunggu polling berikutnya melewati 10:00.
-      // Timer dibersihkan saat pause; durasi jeda tidak dihitung sebagai audio.
-      const remaining = MAX_DURATION_MS - audioRecorder.getStatus().durationMillis;
-      if (remaining <= 0) {
-        void stopRecording(true, true);
-        return;
+    if (!hasActiveRecording) return;
+    let active = true;
+    const checkLimit = () => {
+      if (!active || phaseRef.current === 'finished' || phaseRef.current === 'idle') return;
+      try {
+        const duration = Math.max(latestDurationRef.current, audioRecorder.getStatus().durationMillis);
+        if (duration >= MAX_DURATION_MS && !stoppingRef.current &&
+            !processingRef.current && !submittingRef.current) {
+          void stopAtLimitRef.current();
+        }
+      } catch {
+        // Tidak mengakses recorder kembali sesudah cleanup/unmount.
       }
-      const timer = setTimeout(() => void stopRecording(true, true), remaining);
-      return () => clearTimeout(timer);
-    }
-  }, [hasActiveRecording, isRecording, currentDuration]);
+    };
+    checkLimit();
+    const watchdog = setInterval(checkLimit, 250);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') checkLimit();
+    });
+    return () => { active = false; clearInterval(watchdog); subscription.remove(); };
+  }, [hasActiveRecording, audioRecorder]);
 
   // TOMBOL UTAMA PEREKAMAN
   const handleRecordButton = async () => {
@@ -565,7 +620,10 @@ export default function CurhatAudioScreen() {
           sourceUri = snapshot.uri;
           previewUriRef.current = sourceUri;
           setPreviewUri(sourceUri);
-          audioPlayer.replace({ uri: sourceUri });
+          const previewSource = sourceUri;
+          if (!await runPlayer(player => player.replace({ uri: previewSource }))) {
+            throw new Error('Pemutar belum tersedia.');
+          }
         }
       }
       await setAudioModeAsync({
@@ -574,7 +632,7 @@ export default function CurhatAudioScreen() {
       });
 
       if (isPlaying) {
-        audioPlayer.pause();
+        if (!await pausePlayer()) throw new Error('Pemutar belum tersedia.');
         return;
       }
 
@@ -584,10 +642,10 @@ export default function CurhatAudioScreen() {
           playerStatus.currentTime >=
             playerStatus.duration - 0.1)
       ) {
-        await audioPlayer.seekTo(0);
+        if (!await runPlayer(player => player.seekTo(0))) throw new Error('Pemutar belum tersedia.');
       }
 
-      audioPlayer.play();
+      if (!await runPlayer(player => player.play())) throw new Error('Pemutar belum tersedia.');
     } catch (err) {
       console.log('AUDIO PLAYBACK ERROR:', err);
 
@@ -626,7 +684,7 @@ export default function CurhatAudioScreen() {
     setError('');
 
     try {
-      clearPreview();
+      await clearPreview();
       if (hasActiveRecording && isPaused) {
         await audioRecorder.stop();
         phaseRef.current = 'idle';
@@ -751,6 +809,7 @@ export default function CurhatAudioScreen() {
     submittingRef.current = true;
     setSubmitting(true);
     setLoading(true);
+    let requestStage: 'local' | 'history' | 'upload' = 'local';
 
     try {
       const owner = ownerRef.current;
@@ -778,7 +837,7 @@ export default function CurhatAudioScreen() {
 
       if (await draftOwner() !== owner) throw new Error('Akun telah berubah. Buka kembali cerita dari Home.');
       // HENTIKAN PLAYBACK SEBELUM UPLOAD
-      audioPlayer.pause();
+      await pausePlayer();
 
       // PASTIKAN FILE MASIH TERSEDIA
       const audioFile = new File(uploadUri);
@@ -808,8 +867,10 @@ export default function CurhatAudioScreen() {
 
       // KIRIM AUDIO KE BACKEND
       // Tanpa batas timeout buatan.
+      requestStage = 'history';
       const recovered = await prepareAnalysis(owner, 'audio', accessToken);
       setRetryAnalysis(true);
+      requestStage = 'upload';
       const response = recovered ? { data: recovered } : await sendAudioCurhat(
         uploadUri,
         accessToken,
@@ -820,14 +881,16 @@ export default function CurhatAudioScreen() {
 
       // PASTIKAN HASIL ANALISIS ADA
       if (
+        response?.success === false ||
         !result ||
         typeof result !== 'object' ||
+        Array.isArray(result) ||
         !['emosi', 'ringkasan_cerita', 'akar_masalah', 'rekomendasi', 'waktu'].every(
           (field) => typeof result[field] === 'string' && result[field].trim().length > 0
         )
       ) {
         setError(
-          'Rekaman telah diterima, tetapi hasil analisis belum tersedia. Silakan periksa kembali.'
+          'Hasil analisis belum tersedia atau belum lengkap. Rekamanmu tetap tersimpan. Silakan coba analisis lagi; Riwayat akan diperiksa terlebih dahulu.'
         );
         return;
       }
@@ -883,23 +946,33 @@ export default function CurhatAudioScreen() {
           message
         );
 
+      if (requestStage === 'history' && (isConnectionError || err instanceof ApiError)) {
+        const reason = isConnectionError
+          ? 'Koneksi ke layanan terputus atau layanan tidak dapat dijangkau.'
+          : 'Layanan belum dapat mengambil riwayat ceritamu.';
+        setError(`Riwayat belum dapat diperiksa, sehingga rekaman belum dikirim ulang untuk menghindari cerita ganda. ${reason} Rekamanmu tetap tersimpan. ${isConnectionError ? 'Periksa koneksi internet, lalu' : 'Tunggu beberapa saat, lalu'} tekan Coba Analisis Lagi.`);
+        return;
+      }
+
       if (isConnectionError) {
         setError(
-          'Gagal terhubung ke server. Periksa koneksi dan coba lagi.'
+          formatCurhatFailure(message, err?.status, true)
         );
       } else if (err?.status === 400) {
         setError(formatAudioWarning(message));
       } else if (err?.status === 413) {
         setError(
-          'Ukuran file terlalu besar untuk dikirim. Maksimal 15 MB.'
+          formatCurhatFailure(message, err.status, true)
         );
+      } else if (err?.status === 403) {
+        setError(formatCurhatFailure(message, err.status, true));
       } else if (err?.status === 429) {
         setError(
-          'Layanan analisis sedang menerima terlalu banyak permintaan. Silakan coba lagi beberapa saat.'
+          formatCurhatFailure(message, err.status, true)
         );
       } else if (err?.status === 500) {
         setError(
-          'Ada kendala saat memproses rekamanmu. Silakan coba lagi nanti.'
+          formatCurhatFailure(message, err.status, true)
         );
       } else if (
         err?.status === 502 ||
@@ -907,7 +980,7 @@ export default function CurhatAudioScreen() {
         err?.status === 504
       ) {
         setError(
-          'Layanan analisis sedang mengalami gangguan. Silakan coba lagi nanti.'
+          formatCurhatFailure(message, err.status, true)
         );
       } else {
         setError(
@@ -931,7 +1004,7 @@ export default function CurhatAudioScreen() {
       !loading &&
       !submittingRef.current
     ) {
-      audioPlayer.pause();
+      void pausePlayer();
       router.back();
     }
   };
@@ -1118,11 +1191,21 @@ export default function CurhatAudioScreen() {
 
       <View style={styles.actions}>
         {error !== '' && <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>}
+        {submitting ? (
+          <View style={styles.analysisLoadingCard} accessibilityLiveRegion="polite">
+            {waitingLong ? <AnalysisWaiting audio /> : <>
+            <ActivityIndicator size="large" color="#8D72C3" />
+            <Text style={styles.analysisLoadingTitle}>Sedang menganalisis rekamanmu.</Text>
+            <Text style={styles.analysisLoadingText}>Rekaman tetap tersimpan di perangkat ini.</Text>
+            </>}
+          </View>
+        ) : (
+        <>
         {loading && (
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color="#9F72D3" />
             <Text style={styles.loadingText}>
-              {submitting ? 'Sedang menganalisis rekamanmu. Rekaman tetap tersimpan di perangkat ini.' : 'Sedang memproses rekaman...'}
+              Sedang memproses rekaman...
             </Text>
           </View>
         )}
@@ -1142,6 +1225,8 @@ export default function CurhatAudioScreen() {
         >
           <Text style={styles.secondaryButtonText}>Rekam Ulang</Text>
         </Pressable>
+        </>
+        )}
       </View>
     </ScrollView>
     <Modal
@@ -1234,6 +1319,9 @@ const styles = StyleSheet.create({
   secondaryButtonText: { fontSize: 14, fontWeight: '600', color: '#9264BC' },
   disabledButton: { opacity: 0.45 },
   errorText: { fontSize: 13, color: '#C55F76', lineHeight: 20, textAlign: 'center', marginBottom: 16 },
+  analysisLoadingCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, alignItems: 'center' },
+  analysisLoadingTitle: { fontSize: 16, lineHeight: 23, fontWeight: '700', color: '#4A4352', marginTop: 14, marginBottom: 6, textAlign: 'center' },
+  analysisLoadingText: { fontSize: 13, lineHeight: 20, color: '#8A8493', textAlign: 'center' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 18 },
   loadingText: { flexShrink: 1, fontSize: 12, color: '#8C789F', lineHeight: 19 },
   confirmationOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: 'rgba(53, 38, 68, 0.35)' },

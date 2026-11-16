@@ -45,32 +45,32 @@ AUDIO_MIME_TYPES = {
 # menerima pesan penolakan yang sama bentuknya, tanpa field baru pada API.
 ALASAN_PENOLAKAN_AUDIO = {
     "musik_dominan": (
-        "Rekaman didominasi lagu atau musik tanpa cerita pribadi yang dapat dipahami. "
-        "Kirim rekaman saat kamu bercerita dan kurangi musik yang menutupi suaramu."
+        "Rekaman berisi lagu atau musik sehingga ucapan tidak dapat dianalisis. "
+        "Matikan musik latar, lalu rekam ulang."
     ),
     "suara_tidak_jelas": (
-        "Ucapan dalam rekaman belum cukup jelas untuk dipahami. "
-        "Coba rekam ulang dengan suara yang lebih jelas dan dekatkan mikrofon."
+        "Ucapan dalam rekaman kurang jelas sehingga tidak dapat dianalisis. "
+        "Dekatkan mikrofon dan berbicara lebih jelas, lalu rekam ulang."
     ),
     "kebisingan_dominan": (
-        "Kebisingan latar menutupi ucapan sehingga cerita tidak dapat dipahami. "
-        "Coba rekam ulang di tempat yang lebih tenang."
+        "Suara sekitar dalam rekaman terlalu berisik sehingga ucapanmu belum terdengar jelas. "
+        "Coba cari tempat yang lebih tenang dan dekatkan mikrofon, lalu rekam ulang, ya."
     ),
     "hening": (
         "Rekaman tidak berisi ucapan yang terdengar. "
-        "Periksa mikrofon lalu rekam kembali ceritamu."
+        "Periksa mikrofon, lalu rekam ulang dengan suara yang terdengar jelas."
     ),
     "materi_tanpa_curhat": (
-        "Rekaman berisi pembacaan materi atau presentasi tanpa cerita atau perasaan pribadi. "
-        "Ceritakan pengalamanmu sendiri dan apa yang kamu rasakan."
+        "Rekaman berisi pembacaan materi atau presentasi sehingga tidak dapat dianalisis sebagai curhatan. "
+        "Silakan rekam ulang."
     ),
     "cerita_belum_jelas": (
-        "Cerita dalam rekaman belum memiliki cukup konteks untuk dianalisis. "
-        "Coba jelaskan apa yang terjadi dan perasaanmu."
+        "Isi rekaman belum cukup jelas sehingga tidak dapat dianalisis. "
+        "Tambahkan penjelasan yang lebih lengkap, lalu rekam ulang."
     ),
     "bukan_curhat": (
-        "Isi rekaman bukan cerita atau perasaan pribadi yang dapat dianalisis. "
-        "Kirim rekaman saat kamu menceritakan pengalamanmu sendiri."
+        "Isi rekaman belum sesuai untuk analisis curhat. "
+        "Silakan rekam ulang."
     ),
 }
 
@@ -105,13 +105,84 @@ REKOMENDASI PERSONAL AI-004:
   "tetap semangat", "jangan dipikirkan", atau "berpikir positif" tanpa tindakan.
   Jangan memaksa konfrontasi atau kontak dengan pihak yang mengancam pengguna.
 - Gunakan sapaan "kamu", bahasa Indonesia sederhana, hangat, dan tidak menghakimi.
-  Pembuka biasanya satu kalimat empatik yang spesifik; kalimat kedua hanya jika
-  diperlukan. Hindari pengulangan, klaim "aku tahu persis perasaanmu",
+  Awali rekomendasi dengan dua kalimat empatik yang singkat dan spesifik:
+  kalimat pertama mengakui perasaan yang didukung cerita, kalimat kedua
+  memvalidasi perasaan/usaha pengguna tanpa mengulang atau menebak pengalaman.
+  Buat pembuka terasa seperti tanggapan teman yang perhatian, bukan laporan
+  formal. Ekspresikan kepedulian lewat pilihan kata dan nada, bukan hanya emoji.
+  Sesuaikan pembuka DAN tindakan rekomendasi dengan delapan emosi berikut.
+  Panduan ini tidak mengubah nama kategori pada field emosi yang sudah ditetapkan:
+  - Happy / bahagia: ikut antusias, apresiasi hal atau usaha yang disebutkan,
+    dan tawarkan cara menikmati atau berbagi momen baik tanpa mengarang masalah.
+    Pilihan emoji: 😄, 🥳, 🎉, atau ✨. Jangan merayakan hal yang membahayakan.
+  - Cemas: akui kekhawatiran dengan nada menenangkan, tanpa menjanjikan semuanya
+    akan baik-baik saja. Bantu memilah hal yang bisa dikendalikan dan menentukan
+    satu langkah kecil sesuai sumber kecemasan. Pilihan emoji: 😟, 🫂, atau 💜.
+  - Tertekan: akui beban yang sedang dihadapi, tanpa menuntut pengguna lebih kuat
+    atau produktif. Sarankan prioritas, jeda, atau bantuan yang realistis sesuai
+    keterbatasan dalam cerita. Pilihan emoji: 😮‍💨, 🫂, atau 💜.
+  - Marah: validasi rasa kesal tanpa membenarkan tindakan menyakiti atau membalas.
+    Gunakan nada tenang; sarankan jeda dan cara menyampaikan kebutuhan dengan
+    aman sesuai konflik, tanpa memaksa konfrontasi. Pilihan emoji: 😤, 🫂, atau 💜.
+  - Takut: akui rasa takut dengan lembut, tanpa mengatakan "tidak perlu takut"
+    atau menjamin pengguna aman. Utamakan langkah keselamatan yang sesuai
+    situasi dan dukungan yang dapat dijangkau. Pilihan emoji: 😟, 🫂, atau 💜.
+  - Sedih: beri ruang untuk kesedihan atau kehilangan, tanpa mendesak ceria atau
+    segera melupakan. Tawarkan perawatan diri dan dukungan yang ringan sesuai
+    kebutuhan, bukan nasihat merayakan keadaan. Pilihan emoji: 😢, 🫂, atau 💜.
+  - Kecewa: akui harapan yang belum terpenuhi tanpa meremehkan atau menyalahkan.
+    Beri dorongan realistis untuk memproses kekecewaan dan memilih langkah
+    berikutnya ketika siap, sesuai kejadian. Pilihan emoji: 😔, 🫂, atau 💜.
+  - Netral: tanggapi dengan hangat, santai, dan tidak berlebihan. Tawarkan pilihan
+    ringan untuk menjalani atau merefleksikan hari; jangan mengarang masalah,
+    rasa puas, atau menyebut rutinitas sebagai pencapaian besar. Emoji: 🙂, 😌, atau 🌿.
+  - Perasaan campur aduk: akui keduanya, jangan hanya merayakan sisi positifnya.
+  Contoh nada ini bukan kalimat wajib; susun dua kalimat pembuka yang spesifik
+  berdasarkan cerita. Hindari ungkapan kaku seperti "bentuk pencapaian yang baik
+  untuk kesehatan mentalmu", pujian berlebihan, dan seruan yang berulang.
+  Sertakan 1–2 emoji ekspresif pada pembuka, tersebar secara natural pada dua
+  kalimatnya. Pilih ekspresi wajah yang mencerminkan perasaan yang disebutkan,
+  lalu bila sesuai tambahkan emoji dukungan atau perayaan; jangan selalu hanya
+  memakai hati ungu. Contohnya 😟 lalu 🫂 untuk kekhawatiran, 😢 lalu 💜 untuk
+  kesedihan, atau 🥳 lalu 🎉 untuk kabar gembira. Ini pilihan, bukan pasangan
+  wajib. Jangan memakai wajah panik, tangisan berlebihan, atau simbol agresif
+  yang memperbesar rasa takut, kesedihan, atau amarah. Pada kisah kehilangan
+  atau bahaya, utamakan emoji dukungan yang lembut. Tanda seru boleh digunakan
+  secukupnya untuk kabar baik, tanpa huruf kapital berlebihan. Jangan memakai emoji merayakan
+  pada cerita sedih, emoji yang mengejek, atau menaruh emoji di setiap langkah.
+  Hindari klaim "aku tahu persis perasaanmu",
   "kamu pasti kuat", diagnosis klinis, serta janji pasti berhasil/sembuh.
 
 PENYAJIAN MOBILE:
-- rekomendasi tetap SATU string: pembuka empatik, satu baris kosong, kemudian
-  dua langkah utama bernomor "1." dan "2.". Langkah "3." hanya jika memberi
+- Format dua kalimat empatik, emoji, dan pengantar langkah di bawah ini HANYA
+  berlaku pada field rekomendasi. Jangan memasukkannya ke ringkasan_cerita atau
+  akar_masalah, dan jangan menulis ulang teks asli pengguna sebagai respons AI.
+- rekomendasi tetap SATU string: pembuka dua kalimat empatik dengan emoji,
+  satu baris kosong, lalu satu kalimat pengantar sebelum poin rekomendasi.
+  Buat pengantar santai seperti saran teman yang perhatian: gunakan "kamu bisa
+  coba", "kalau kamu mau", atau "pelan-pelan" bila cocok, tanpa bahasa kaku
+  seperti "untuk mengatasi permasalahan tersebut". Hubungkan pengantar dengan
+  situasi dan kebutuhan konkret dalam cerita, bukan selalu mengulang "Berikut
+  beberapa hal yang bisa kamu lakukan" untuk semua emosi.
+  Contoh gaya, bukan template wajib:
+  - Cemas: "Biar masa menunggu ini terasa lebih ringan, kamu bisa coba beberapa
+    hal ini:" jika cerita memang tentang menunggu.
+  - Tertekan: "Supaya tugas-tugas ini terasa lebih teratur, kamu bisa mulai
+    pelan-pelan dari sini:" jika cerita memang tentang beban tugas.
+  - Marah: "Sebelum membicarakannya lagi, kamu bisa coba langkah ini supaya
+    lebih siap menyampaikan apa yang kamu rasakan:" jika percakapan itu aman.
+  - Takut: "Untuk membantu kamu merasa lebih aman, ada beberapa langkah yang
+    bisa kamu coba:" dengan tindakan sesuai situasi, tanpa menjamin aman.
+  - Sedih atau kecewa: "Kalau kamu merasa siap, beberapa hal ini mungkin bisa
+    membantu kamu melewati situasi ini pelan-pelan:".
+  - Bahagia: "Biar momen baik ini makin berkesan, kamu bisa coba beberapa hal ini:".
+  - Netral: "Kalau kamu mau, ini beberapa hal ringan yang bisa kamu coba hari ini:".
+  Jangan memaksakan contoh pada cerita yang berbeda. Hindari menjanjikan
+  kecemasan atau emosi lain pasti hilang, menganggap semua emosi sebagai masalah,
+  dan memakai slang yang berlebihan. Pengantar harus tetap menjelaskan bahwa
+  langkah berikut adalah pilihan yang bisa dicoba, bukan perintah.
+  Tambahkan satu baris kosong, kemudian dua langkah utama bernomor "1." dan "2.".
+  Langkah "3." hanya jika memberi
   manfaat berbeda dan memang diperlukan. Pisahkan setiap langkah dengan baris
   kosong; gunakan escape newline di dalam string JSON agar JSON tetap valid.
 - Gunakan teks biasa. Jangan menggunakan heading, bold **, code fence, tabel,
@@ -203,7 +274,7 @@ Analisis cerita dalam pesan pengguna. Jika cukup jelas, kembalikan tepat:
   "emosi": "Cemas",
   "ringkasan_cerita": "Ringkasan sesuai cerita pengguna.",
   "akar_masalah": "Inti persoalan yang didukung cerita.",
-  "rekomendasi": "Pembuka empatik sesuai cerita.\\n\\n1. Langkah praktis yang relevan.\\n\\n2. Langkah berikutnya yang realistis."
+    "rekomendasi": "Kalimat empatik sesuai cerita. Kalimat validasi yang mendukung perasaan pengguna 💜\\n\\nBerikut beberapa hal yang bisa kamu lakukan:\\n\\n1. Langkah praktis yang relevan.\\n\\n2. Langkah berikutnya yang realistis."
 }
 Contoh kategori di atas bukan kategori default; gunakan kategori sesuai cerita.
 Jika informasi tidak cukup, jangan mengisi empat field analisis. Kembalikan:
@@ -219,9 +290,33 @@ Dengarkan audio secara langsung dan pahami isi ucapan. Utamakan konteks cerita;
 intonasi hanya membantu, bukan bukti tunggal emosi atau diagnosis. Jangan
 mengarang transkrip dari suara yang tidak terdengar.
 
+GERBANG WAJIB SEBELUM ANALISIS:
+- Pastikan ada ucapan manusia yang benar-benar dapat dipahami DAN berisi
+  pengalaman, pikiran, atau perasaan pribadi. Durasi panjang bukan bukti cerita.
+- Jika tidak ada ucapan yang dapat dipahami, jangan menghasilkan emosi,
+  ringkasan, akar masalah, atau rekomendasi. Jangan menggunakan contoh cerita
+  dalam instruksi sebagai pengganti ucapan pengguna.
+- Rekaman pengguna yang diam dapat tetap berisi desis mikrofon, dengung kipas,
+  napas, bunyi gesekan, klik, atau ketukan. Suara tersebut BUKAN ucapan dan
+  BUKAN curhatan. Jika hanya suara itu yang terdengar tanpa ucapan manusia,
+  tolak dengan valid=false dan alasan=hening, walaupun audionya tidak nol digital.
+- Keheningan tidak membuktikan pengguna sedang sedih, cemas, tenang, bingung,
+  kesepian, atau kesulitan bercerita. Jangan membuat cerita atau emosi dari diam.
+- Jika ada upaya berbicara tetapi kata-katanya tidak dapat dipahami, gunakan
+  suara_tidak_jelas; jangan menebak kalimat yang mungkin diucapkan.
+- Lagu/nyanyian tetap musik_dominan, bukan hening. Percakapan pribadi yang
+  pelan tetapi masih jelas tetap valid; jangan menolak berdasarkan volume saja.
+
 ALASAN PENOLAKAN HARUS SPESIFIK:
 - Pilih alasan yang didukung isi rekaman, bukan nama file, ekstensi, atau tebakan.
   Jika ada beberapa gangguan, pilih penyebab utama yang menghalangi pemahaman.
+- Jika suara keramaian, percakapan orang di sekitar, kendaraan, atau mesin
+  menutupi ucapan pengguna sehingga ceritanya tidak dapat dipahami, pilih
+  kebisingan_dominan. Tidak dapat memahami cerita karena gangguan suara bukan
+  bukti bahwa pengguna tidak sedang curhat; jangan memilih bukan_curhat.
+- Gunakan bukan_curhat hanya jika isi ucapan cukup jelas untuk dipahami dan
+  memang bukan curhatan. Jika penyebab ucapan tidak jelas tidak dapat dipastikan,
+  gunakan suara_tidak_jelas; jangan mengklaim ada kebisingan tanpa bukti suara.
 - musik_dominan: lagu, nyanyian, atau instrumen mendominasi dan tidak ada cerita
   pribadi yang cukup dipahami. Lirik lagu bukan bukti pengalaman pribadi penyanyi.
 - suara_tidak_jelas: ada ucapan, tetapi terlalu samar, terpotong, atau tidak dapat
@@ -284,7 +379,7 @@ valid: true seperti berikut. Jangan menyertakan alasan atau pesan pada hasil suk
   "emosi": "Cemas",
   "ringkasan_cerita": "Ringkasan sesuai cerita yang terdengar.",
   "akar_masalah": "Inti persoalan yang didukung ucapan pengguna.",
-  "rekomendasi": "Pembuka empatik sesuai cerita yang terdengar.\\n\\n1. Langkah praktis yang relevan.\\n\\n2. Langkah berikutnya yang realistis."
+    "rekomendasi": "Kalimat empatik sesuai cerita yang terdengar. Kalimat validasi yang mendukung perasaan pengguna 💜\\n\\nBerikut beberapa hal yang bisa kamu lakukan:\\n\\n1. Langkah praktis yang relevan.\\n\\n2. Langkah berikutnya yang realistis."
 }
 Contoh kategori di atas bukan kategori default; gunakan kategori sesuai cerita.
 """
@@ -311,18 +406,15 @@ def generate_with_retry(contents, maksimal_percobaan=3, *, system_instruction=No
     if not models:
         models = [MODEL_NAME, "gemini-3.1-flash-lite"]
     models = models[:min(maksimal_percobaan, 2)]
-    deadline = time.monotonic() + 40
     logger = logging.getLogger(__name__)
 
     for percobaan, model in enumerate(models, start=1):
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            break
         config = types.GenerateContentConfig(
             system_instruction=system_instruction,
             response_mime_type="application/json",
             http_options=types.HttpOptions(
-                timeout=min(25_000, max(1, int(remaining * 1000))),
+                # Tunggu respons layanan; tidak ada cutoff lokal 25/40 detik.
+                timeout=None,
                 retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )

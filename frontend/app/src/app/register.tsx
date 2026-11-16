@@ -57,7 +57,7 @@ export default function RegisterScreen() {
 
     // VALIDASI EMAIL
     if (!validateEmail(email.trim())) {
-      setError('Format surel tidak valid.');
+      setError('Format email tidak valid.');
       return;
     }
 
@@ -197,7 +197,7 @@ export default function RegisterScreen() {
 
         {/* EMAIL */}
         <Text style={styles.label}>
-          Surel
+          Email
         </Text>
 
         <View style={styles.inputContainer}>
@@ -210,7 +210,7 @@ export default function RegisterScreen() {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Masukkan surel"
+            placeholder="Masukkan email"
             placeholderTextColor="#A6A0B3"
             keyboardType="email-address"
             autoCapitalize="none"

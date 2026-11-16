@@ -19,6 +19,8 @@ from rest_framework.pagination import PageNumberPagination
 
 from mutagen import MutagenError
 from mutagen.mp4 import MP4
+from google.genai.errors import APIError as GeminiAPIError
+from httpx import TimeoutException
 
 from .models import GoogleIdentity, RiwayatCurhat
 from .serializers import (
@@ -76,6 +78,17 @@ def tangani_error_curhat(error, jenis):
         )
 
     logger.exception("Gagal memproses curhat %s", jenis)
+
+    if isinstance(error, TimeoutException) or (
+        isinstance(error, GeminiAPIError) and error.code == 504
+    ):
+        return Response(
+            {"success": False, "message": (
+                "Layanan AI menghentikan permintaan karena batas waktu layanan tercapai. "
+                "Ceritamu tetap tersimpan di perangkat. Silakan coba analisis lagi."
+            )},
+            status=status.HTTP_504_GATEWAY_TIMEOUT,
+        )
 
     if isinstance(error, DatabaseError):
         return Response(

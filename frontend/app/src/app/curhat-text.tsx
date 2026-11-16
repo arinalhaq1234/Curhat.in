@@ -1,10 +1,14 @@
 import { draftOwner, readDraft, writeDraft, removeDraft, prepareAnalysis } from '@/services/drafts';
+import AnalysisWaiting from '@/components/analysis-waiting';
+import { Ionicons } from '@expo/vector-icons';
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +17,7 @@ import {
   View,
 } from 'react-native';
 
-import { sendTextCurhat } from '@/services/api';
+import { formatCurhatFailure, sendTextCurhat } from '@/services/api';
 import {
   clearSession,
   getAccessToken,
@@ -26,6 +30,13 @@ export default function CurhatTextScreen() {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [waitingLong, setWaitingLong] = useState(false);
+  useEffect(() => {
+    setWaitingLong(false);
+    if (!loading) return;
+    const timer = setTimeout(() => setWaitingLong(true), 2 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [loading]);
   const [error, setError] = useState('');
 
   const ownerRef = useRef<string | null>(null);
@@ -175,15 +186,15 @@ export default function CurhatTextScreen() {
 
       if (isConnectionError) {
         setError(
-          'Gagal terhubung ke server. Periksa koneksi dan coba lagi.'
+          formatCurhatFailure(message, error?.status, false)
         );
       } else if (error?.status === 429) {
         setError(
-          'Layanan analisis sedang menerima terlalu banyak permintaan. Silakan coba lagi beberapa saat.'
+          formatCurhatFailure(message, error.status, false)
         );
       } else if (error?.status === 500) {
         setError(
-          'Ada kendala saat memproses ceritamu. Silakan coba lagi nanti.'
+          formatCurhatFailure(message, error.status, false)
         );
       } else if (
         error?.status === 502 ||
@@ -191,7 +202,7 @@ export default function CurhatTextScreen() {
         error?.status === 504
       ) {
         setError(
-          'Layanan analisis sedang mengalami gangguan. Silakan coba lagi nanti.'
+          formatCurhatFailure(message, error.status, false)
         );
       } else {
         setError(
@@ -209,47 +220,47 @@ export default function CurhatTextScreen() {
   };
 
   return (
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
+      style={styles.screen}
       contentContainerStyle={[
         styles.container,
-        { paddingBottom: styles.container.paddingBottom + insets.bottom },
+        {
+          paddingTop: Math.max(56, insets.top + 16),
+          paddingBottom: styles.container.paddingBottom + insets.bottom,
+        },
       ]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
           disabled={loading}
+          accessibilityLabel="Kembali"
+          accessibilityRole="button"
         >
-          <Text style={styles.backText}>‹</Text>
+          <Ionicons name="chevron-back" size={25} color="#3F384A" />
         </Pressable>
-
-        <View>
-          <Text style={styles.title}>
-            Curhat lewat teks
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Ceritakan apa pun yang sedang kamu rasakan.
-          </Text>
-        </View>
+        <Text style={styles.title}>Curhat Teks</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <View style={styles.messageCard}>
-        <Text style={styles.messageTitle}>
-          Ruang ini untukmu
-        </Text>
-
+        <Text style={styles.messageTitle}>Ruang ini untukmu 💜</Text>
         <Text style={styles.messageText}>
-          Tulis dengan nyaman. Tidak perlu menyusun kata-kata dengan sempurna.
+          Ceritakan apa yang kamu alami dan rasakan dengan bahasa yang nyaman. Boleh gunakan emoji juga 😊 Tulis minimal 150 dan maksimal 5000 karakter, ya.
         </Text>
       </View>
 
-      <Text style={styles.label}>
-        Ceritamu
-      </Text>
+      <View style={styles.inputHeading}>
+        <Text style={styles.label}>Tuliskan di sini ceritamu 🤗</Text>
+      </View>
 
       <TextInput
         value={text}
@@ -282,19 +293,16 @@ export default function CurhatTextScreen() {
         maxLength={MAX_LENGTH}
       />
 
-      <View style={styles.inputInfo}>
-        <View style={styles.errorContainer}>
-          {error ? (
-            <Text style={styles.errorText}>
-              {error}
-            </Text>
-          ) : null}
-        </View>
+      <Text style={styles.characterCount}>
+        {text.length}/{MAX_LENGTH}
+      </Text>
 
-        <Text style={styles.characterCount}>
-          {text.length}/{MAX_LENGTH}
-        </Text>
-      </View>
+      {error ? (
+        <View style={styles.errorContainer} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <Ionicons name="alert-circle-outline" size={17} color="#B45363" style={styles.errorIcon} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.infoBox}>
         <Text style={styles.infoIcon}>
@@ -309,6 +317,7 @@ export default function CurhatTextScreen() {
 
       {loading ? (
         <View style={styles.loadingCard}>
+          {waitingLong ? <AnalysisWaiting /> : <>
           <ActivityIndicator
             size="large"
             color="#8D72C3"
@@ -317,7 +326,7 @@ export default function CurhatTextScreen() {
           <Text style={styles.loadingTitle}>
             Sedang menganalisis ceritamu...
           </Text>
-
+          </>}
         </View>
       ) : (
         <>
@@ -346,10 +355,15 @@ export default function CurhatTextScreen() {
         </>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#F8F5FC',
+  },
   container: {
     flexGrow: 1,
     backgroundColor: '#F8F5FC',
@@ -360,39 +374,28 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    marginBottom: 28,
+    alignItems: 'center',
+    height: 48,
+    marginBottom: 18,
+  },
+
+  headerSpacer: {
+    width: 44,
   },
 
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    width: 44,
+    height: 44,
     justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-  },
-
-  backText: {
-    fontSize: 30,
-    color: '#8067B7',
-    marginTop: -2,
+    alignItems: 'flex-start',
   },
 
   title: {
-    fontSize: 24,
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
     fontWeight: '700',
-    color: '#3F384A',
-    marginBottom: 5,
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: '#8A8493',
-    lineHeight: 20,
-    maxWidth: 270,
+    color: '#352F3F',
   },
 
   messageCard: {
@@ -419,7 +422,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#514A5B',
-    marginBottom: 8,
+    flexShrink: 1,
   },
 
   textArea: {
@@ -438,28 +441,41 @@ const styles = StyleSheet.create({
     borderColor: '#D95C5C',
   },
 
-  inputInfo: {
+  inputHeading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: 8,
-    marginBottom: 16,
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
   },
 
   errorContainer: {
-    flex: 1,
-    paddingRight: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF1F2',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 10,
+    gap: 8,
+  },
+
+  errorIcon: {
+    marginTop: 1,
   },
 
   errorText: {
+    flex: 1,
     fontSize: 12,
-    color: '#D95C5C',
-    lineHeight: 17,
+    color: '#B45363',
+    lineHeight: 18,
   },
 
   characterCount: {
     fontSize: 12,
     color: '#938B9D',
+    textAlign: 'right',
+    marginTop: 8,
   },
 
   infoBox: {
@@ -467,7 +483,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FBF9FD',
     borderRadius: 16,
     padding: 14,
-    marginBottom: 28,
+    marginTop: 16,
+    marginBottom: 24,
   },
 
   infoIcon: {

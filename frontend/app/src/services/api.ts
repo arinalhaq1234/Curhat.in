@@ -16,6 +16,32 @@ export class ApiError extends Error {
   }
 }
 
+// Pesan pengguna menjelaskan kendala yang diketahui dan tindakan berikutnya.
+// Detail protokol/exception tetap menjadi urusan log pengembang.
+export function formatCurhatFailure(message: string, status: number | undefined, audio: boolean) {
+  const saved = audio ? 'Rekamanmu tetap tersimpan.' : 'Ceritamu tetap tersimpan.';
+  const retry = 'Silakan tekan Coba Analisis Lagi beberapa saat lagi.';
+  if (status === 504 || /deadline|timed? ?out|batas waktu/i.test(message)) {
+    return `Layanan AI belum selesai menganalisis hingga batas waktu layanan tercapai. ${saved} ${retry}`;
+  }
+  if (status === 429 || /batas penggunaan|kuota|resource_exhausted|rate limit/i.test(message)) {
+    return `Layanan AI sedang mencapai batas penggunaan. ${saved} Tunggu beberapa saat, lalu tekan Coba Analisis Lagi.`;
+  }
+  if (/belum dapat disimpan|gagal.*menyimpan.*analisis/i.test(message)) {
+    return `Hasil analisis belum berhasil disimpan oleh layanan. ${saved} ${retry}`;
+  }
+  if (/hasil analisis AI tidak valid|respons analisis.*tidak valid/i.test(message)) {
+    return `Jawaban dari AI belum dapat ditampilkan dengan lengkap. ${saved} ${retry}`;
+  }
+  if (status === 403) return `Akunmu belum diizinkan mengakses layanan ini. ${saved} Coba masuk kembali menggunakan akun pemilik cerita.`;
+  if (status === 413) return `Ukuran rekaman melebihi batas pengiriman 15 MB. ${saved} Rekam ulang dengan durasi lebih singkat.`;
+  if (/fetch failed|network request failed|failed to fetch|network error|unexpected end of stream/i.test(message)) {
+    return `Koneksi ke layanan terputus atau layanan tidak dapat dijangkau. ${saved} Periksa koneksi internet, lalu tekan Coba Analisis Lagi.`;
+  }
+  const noRepeat = audio ? 'Kamu tidak perlu merekam ulang.' : 'Kamu tidak perlu mengetik ulang.';
+  return `Analisis belum berhasil karena ada kendala pada layanan. ${saved} ${noRepeat} Tunggu beberapa saat, lalu tekan Coba Analisis Lagi.`;
+}
+
 export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
@@ -36,7 +62,7 @@ export async function apiRequest(
     if (data.errors?.username) {
       message = "Nama pengguna sudah digunakan.";
     } else if (data.errors?.email) {
-      message = "Surel sudah digunakan atau tidak valid.";
+      message = "Email sudah digunakan atau tidak valid.";
     } else if (data.detail) {
       message = data.detail;
     } else if (data.message) {

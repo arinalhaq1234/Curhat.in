@@ -9,16 +9,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function EditProfilScreen() {
   const insets = useSafeAreaInsets();
   const [username, setUsername] = useState('');
+  const [savedUsername, setSavedUsername] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [attempt, setAttempt] = useState(0);
   const savingRef = useRef(false);
   const activeRef = useRef(false);
   const accountId = useRef<number | null>(null);
+  const hasChanges = username.trim() !== savedUsername;
+  const saveDisabled = saving || !hasChanges;
 
   const expired = async () => {
     await clearSession();
@@ -42,6 +44,7 @@ export default function EditProfilScreen() {
         }
         accountId.current = data.id;
         setUsername(data.username);
+        setSavedUsername(data.username);
         setEmail(typeof data.email === 'string' ? data.email : '');
         setReady(true);
       } catch (caught) {
@@ -54,8 +57,8 @@ export default function EditProfilScreen() {
   }, [attempt]));
 
   const save = async () => {
-    if (savingRef.current || !ready) return;
-    setError(''); setSuccess('');
+    if (savingRef.current || !ready || !hasChanges) return;
+    setError('');
     const value = username.trim();
     if (!value) { setError('Nama pengguna wajib diisi.'); return; }
     if (value.length > 150) { setError('Nama pengguna maksimal 150 karakter.'); return; }
@@ -75,7 +78,8 @@ export default function EditProfilScreen() {
         throw new Error('Respons penyimpanan belum valid.');
       }
       setUsername(response.data.username);
-      setSuccess('Profil berhasil diperbarui.');
+      setSavedUsername(response.data.username);
+      router.dismissTo({ pathname: '/profile', params: { profileUpdated: String(Date.now()) } });
     } catch (caught) {
       if (!activeRef.current) return;
       if (caught instanceof ApiError && caught.status === 401) { await expired(); return; }
@@ -101,14 +105,13 @@ export default function EditProfilScreen() {
           {ready && <>
             <View style={styles.avatar}><Text style={styles.initial}>{Array.from(username.trim())[0]?.toUpperCase() || 'U'}</Text></View>
             <Text style={styles.label}>Nama Pengguna</Text>
-            <TextInput style={styles.input} value={username} onChangeText={value => { setUsername(value); setError(''); setSuccess(''); }} editable={!saving} autoCapitalize="none" autoCorrect={false} placeholder="Masukkan nama pengguna" placeholderTextColor="#A6A0B3" accessibilityLabel="Nama Pengguna" />
+            <TextInput style={styles.input} value={username} onChangeText={value => { setUsername(value); setError(''); }} editable={!saving} autoCapitalize="none" autoCorrect={false} placeholder="Masukkan nama pengguna" placeholderTextColor="#A6A0B3" accessibilityLabel="Nama Pengguna" />
             <Text style={styles.label}>Email</Text>
             <Text style={styles.email} selectable>{email || 'Email belum tersedia'}</Text>
             <Text style={styles.hint}>Email akun tidak dapat diubah.</Text>
           </>}
           {!!error && <Text style={styles.error} accessibilityRole="alert">{error}</Text>}
-          {!!success && <Text style={styles.success} accessibilityLiveRegion="polite">{success}</Text>}
-          {ready ? <Pressable style={[styles.save, saving && styles.disabled]} onPress={() => void save()} disabled={saving} accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }}>
+          {ready ? <Pressable style={[styles.save, saveDisabled && styles.disabled]} onPress={() => void save()} disabled={saveDisabled} accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saveDisabled }}>
             {saving && <ActivityIndicator color="#FFFFFF" size="small" />}
             <Text style={styles.saveText}>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</Text>
           </Pressable> : <Pressable style={styles.save} onPress={() => setAttempt(value => value + 1)} accessibilityRole="button"><Text style={styles.saveText}>Coba Lagi</Text></Pressable>}
@@ -131,7 +134,6 @@ const styles = StyleSheet.create({
   email: { minHeight: 54, borderRadius: 15, backgroundColor: '#EAE5F0', padding: 14, fontSize: 14, lineHeight: 22, color: '#8A8096' },
   hint: { fontSize: 12, lineHeight: 18, color: '#817A89', marginTop: 8 },
   error: { fontSize: 13, lineHeight: 20, color: '#B95050', marginTop: 12 },
-  success: { fontSize: 13, lineHeight: 20, color: '#4E8A79', marginTop: 12 },
   save: { flexDirection: 'row', gap: 10, minHeight: 52, borderRadius: 15, backgroundColor: '#8067B7', padding: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
   saveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   disabled: { opacity: 0.6 },
