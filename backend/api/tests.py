@@ -6,13 +6,14 @@ import wave
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import DatabaseError
 from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIClient
+from google.genai import errors
 
 from . import services
 from .admin import RiwayatCurhatAdminForm
@@ -141,6 +142,7 @@ class ValidationTests(SimpleTestCase):
 
 class GeminiFunctionTests(SimpleTestCase):
     def setUp(self):
+        self.enterContext(patch.dict(os.environ, {"GEMINI_MODELS": ""}))
         self.gemini = self.enterContext(patch("api.services.client"))
         self.generate = self.gemini.models.generate_content
         self.generate.return_value = respons_ai(hasil_contoh())
@@ -218,26 +220,78 @@ class GeminiFunctionTests(SimpleTestCase):
             services.analisis_teks("Aku sedih.")
 
     def test_429_is_retried_then_can_succeed(self):
-        self.generate.side_effect = [RuntimeError("429 RESOURCE_EXHAUSTED"), respons_ai(hasil_contoh())]
+        self.generate.side_effect = [
+            errors.ClientError(429, {"error": {"status": "RESOURCE_EXHAUSTED"}}),
+            respons_ai(hasil_contoh()),
+        ]
         self.assertEqual(services.analisis_teks("Aku cemas menunggu ujian."), hasil_contoh())
         self.assertEqual(self.generate.call_count, 2)
-        self.sleep.assert_called_once_with(5)
+        self.assertEqual(
+            [item.kwargs["model"] for item in self.generate.call_args_list],
+            ["gemini-3.8-flash", "gemini-3.1-flash-lite"],
+        )
+        self.sleep.assert_not_called()
 
-    def test_503_retry_stops_after_three_attempts(self):
-        self.generate.side_effect = RuntimeError("503 UNAVAILABLE")
-        with self.assertRaisesMessage(RuntimeError, "sedang sibuk"):
+    def test_503_retry_stops_after_two_models_without_waiting(self):
+        self.generate.side_effect = errors.ServerError(503, {"error": {"status": "UNAVAILABLE"}})
+        with self.assertRaisesMessage(RuntimeError, "Analisis belum bisa diproses. Silakan coba lagi nanti."):
             services.analisis_teks("Aku sedih.")
-        self.assertEqual(self.generate.call_count, 3)
-        self.assertEqual(self.sleep.call_args_list, [call(5), call(10)])
+        self.assertEqual(self.generate.call_count, 2)
+        self.sleep.assert_not_called()
 
     def test_exhausted_quota_has_a_clear_message(self):
-        self.generate.side_effect = RuntimeError("429 RESOURCE_EXHAUSTED")
-        with self.assertRaisesMessage(RuntimeError, "Batas penggunaan Gemini"):
+        self.generate.side_effect = errors.ClientError(429, {"error": {"status": "RESOURCE_EXHAUSTED"}})
+        with self.assertRaisesMessage(RuntimeError, "Analisis belum bisa diproses. Silakan coba lagi nanti."):
             services.analisis_teks("Aku sedih.")
+        self.assertEqual(self.generate.call_count, 2)
+
+    def test_custom_models_use_only_primary_and_one_backup(self):
+        with patch.dict(os.environ, {"GEMINI_MODELS": "model-utama, model-cadangan, model-ketiga"}):
+            self.generate.side_effect = [
+                errors.ServerError(503, {"error": {"status": "UNAVAILABLE"}}),
+                respons_ai(hasil_contoh()),
+            ]
+            services.analisis_teks("Aku sedih.")
+        self.assertEqual(
+            [item.kwargs["model"] for item in self.generate.call_args_list],
+            ["model-utama", "model-cadangan"],
+        )
+
+    def test_backup_timeout_uses_remaining_budget_and_disables_sdk_retry(self):
+        self.generate.side_effect = [
+            errors.ClientError(429, {"error": {"status": "RESOURCE_EXHAUSTED"}}),
+            respons_ai(hasil_contoh()),
+        ]
+        with patch("api.services.time.monotonic", side_effect=[0, 0, 0, 26, 26, 26, 26]):
+            services.analisis_teks("Aku sedih.")
+        first, second = [item.kwargs["config"].http_options for item in self.generate.call_args_list]
+        self.assertEqual(first.timeout, 25_000)
+        self.assertEqual(second.timeout, 14_000)
+        self.assertEqual(first.retry_options.attempts, 1)
+        self.assertEqual(second.retry_options.attempts, 1)
+
+    def test_retry_logs_metadata_without_error_details(self):
+        private_marker = "PRIVATE_STORY_MARKER"
+        self.generate.side_effect = [
+            errors.ClientError(429, {"error": {"message": private_marker}}),
+            respons_ai(hasil_contoh()),
+        ]
+        with self.assertLogs("api.services") as logs:
+            services.analisis_teks("Aku sedih.")
+        self.assertNotIn(private_marker, " ".join(logs.output))
+        self.assertIn("attempt=1", logs.output[0])
+        self.assertIn("status=429", logs.output[0])
 
     def test_other_api_errors_are_not_retried(self):
-        self.generate.side_effect = RuntimeError("404 model tidak tersedia")
-        with self.assertRaisesMessage(RuntimeError, "404"):
+        self.generate.side_effect = errors.ClientError(404, {"error": {"status": "NOT_FOUND"}})
+        with self.assertRaises(errors.ClientError):
+            services.analisis_teks("Aku sedih.")
+        self.generate.assert_called_once()
+        self.sleep.assert_not_called()
+
+    def test_error_text_containing_429_is_not_a_retry_signal(self):
+        self.generate.side_effect = RuntimeError("429 in unstructured message")
+        with self.assertRaisesMessage(RuntimeError, "429 in unstructured message"):
             services.analisis_teks("Aku sedih.")
         self.generate.assert_called_once()
         self.sleep.assert_not_called()

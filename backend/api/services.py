@@ -1,6 +1,7 @@
 """Analisis AI-003 dan rekomendasi personal AI-004 dalam satu alur BE-002."""
 
 import json
+import logging
 import os
 import re
 import subprocess
@@ -10,7 +11,7 @@ import wave
 from io import BytesIO
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 from imageio_ffmpeg import get_ffmpeg_exe
 
 
@@ -301,40 +302,57 @@ def _get_client():
 
 
 def generate_with_retry(contents, maksimal_percobaan=3, *, system_instruction=None):
-    """Minta JSON; ulangi hanya gangguan 429/503, bukan kesalahan struktur."""
+    """Coba model utama, lalu cadangan hanya untuk status API 429/503."""
     if type(maksimal_percobaan) is not int or maksimal_percobaan < 1:
         raise ValueError("Jumlah percobaan harus berupa bilangan bulat positif.")
 
     gemini = _get_client()
-    config = types.GenerateContentConfig(
-        system_instruction=system_instruction,
-        response_mime_type="application/json",
-    )
-    waktu_tunggu = 5
-    for percobaan in range(1, maksimal_percobaan + 1):
+    models = [name.strip() for name in os.getenv("GEMINI_MODELS", "").split(",") if name.strip()]
+    if not models:
+        models = [MODEL_NAME, "gemini-3.1-flash-lite"]
+    models = models[:min(maksimal_percobaan, 2)]
+    deadline = time.monotonic() + 40
+    logger = logging.getLogger(__name__)
+
+    for percobaan, model in enumerate(models, start=1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            response_mime_type="application/json",
+            http_options=types.HttpOptions(
+                timeout=min(25_000, max(1, int(remaining * 1000))),
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
+        )
+        started_at = time.monotonic()
         try:
-            return gemini.models.generate_content(
-                model=MODEL_NAME,
+            response = gemini.models.generate_content(
+                model=model,
                 contents=contents,
                 config=config,
             )
+            logger.info(
+                "Gemini model=%s attempt=%d duration_ms=%d status=success",
+                model, percobaan, int((time.monotonic() - started_at) * 1000),
+            )
+            return response
         except Exception as error:
-            pesan = str(error).upper()
-            rate_limit = "429" in pesan or "RESOURCE_EXHAUSTED" in pesan
-            sibuk = "503" in pesan or "UNAVAILABLE" in pesan
-            if not (rate_limit or sibuk):
+            status_code = error.code if isinstance(error, errors.APIError) else None
+            logger.warning(
+                "Gemini model=%s attempt=%d duration_ms=%d status=%s",
+                model, percobaan, int((time.monotonic() - started_at) * 1000),
+                status_code if status_code is not None else type(error).__name__,
+            )
+            if status_code not in (429, 503):
                 raise
-            if percobaan == maksimal_percobaan:
-                if rate_limit:
-                    raise RuntimeError(
-                        "Batas penggunaan Gemini sedang tercapai. "
-                        "Silakan coba kembali beberapa saat lagi."
-                    ) from error
+            if percobaan == len(models):
                 raise RuntimeError(
-                    "Layanan Gemini sedang sibuk. Silakan coba kembali beberapa saat lagi."
-                ) from error
-            time.sleep(waktu_tunggu)
-            waktu_tunggu *= 2
+                    "Analisis belum bisa diproses. Silakan coba lagi nanti."
+                ) from None
+
+    raise RuntimeError("Analisis belum bisa diproses. Silakan coba lagi nanti.")
 
 
 def _objek_json_unik(pasangan):
