@@ -1190,7 +1190,12 @@ export default function CurhatAudioScreen() {
       </View>
 
       <View style={styles.actions}>
-        {error !== '' && <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>}
+        {error !== '' && (
+          <View style={styles.errorContainer} accessibilityRole="alert" accessibilityLiveRegion="polite">
+            <Ionicons name="alert-circle-outline" size={17} color="#B45363" style={styles.errorIcon} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
         {submitting ? (
           <View style={styles.analysisLoadingCard} accessibilityLiveRegion="polite">
             {waitingLong ? <AnalysisWaiting audio /> : <>
@@ -1318,7 +1323,26 @@ const styles = StyleSheet.create({
   secondaryButton: { height: 50, borderRadius: 13, borderWidth: 1.5, borderColor: '#D5C0E8', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   secondaryButtonText: { fontSize: 14, fontWeight: '600', color: '#9264BC' },
   disabledButton: { opacity: 0.45 },
-  errorText: { fontSize: 13, color: '#C55F76', lineHeight: 20, textAlign: 'center', marginBottom: 16 },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF1F2',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 10,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorIcon: {
+    marginTop: 1,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#B45363',
+    lineHeight: 18,
+  },
   analysisLoadingCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, alignItems: 'center' },
   analysisLoadingTitle: { fontSize: 16, lineHeight: 23, fontWeight: '700', color: '#4A4352', marginTop: 14, marginBottom: 6, textAlign: 'center' },
   analysisLoadingText: { fontSize: 13, lineHeight: 20, color: '#8A8493', textAlign: 'center' },

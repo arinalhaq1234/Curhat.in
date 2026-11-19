@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DatabaseError, IntegrityError, transaction
+from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
@@ -659,6 +660,13 @@ class RiwayatCurhatPagination(PageNumberPagination):
 @permission_classes([IsAuthenticated])
 def curhat_history(request):
 
+    jenis = request.query_params.get("jenis", "")
+    if jenis not in ("", "teks", "audio"):
+        return Response(
+            {"success": False, "message": "Kategori riwayat tidak valid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     # Hanya mengambil curhat milik pengguna yang login.
     # Kolom audio_file tidak diambil agar respons lebih ringan.
     riwayat = (
@@ -674,6 +682,14 @@ def curhat_history(request):
         )
         .order_by("-waktu", "-id")
     )
+
+    # Filter kategori sebelum pagination agar rekaman lama tetap ditemukan.
+    # Kondisi ini mengikuti get_jenis() pada serializer daftar riwayat.
+    tanpa_audio = Q(audio_name__isnull=True) | Q(audio_name="")
+    if jenis == "audio":
+        riwayat = riwayat.exclude(tanpa_audio)
+    elif jenis == "teks":
+        riwayat = riwayat.filter(tanpa_audio)
 
     # Membagi hasil menjadi beberapa halaman.
     paginator = RiwayatCurhatPagination()

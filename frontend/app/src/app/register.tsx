@@ -1,13 +1,15 @@
-import GoogleSignInButton from '@/components/GoogleSignInButton';
+
 
 import { registerUser } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +20,9 @@ import {
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
+  const emailInput = useRef<TextInput>(null);
+  const passwordInput = useRef<TextInput>(null);
+  const confirmPasswordInput = useRef<TextInput>(null);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -126,7 +131,13 @@ export default function RegisterScreen() {
   };
 
   return (
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      enabled={Platform.OS !== 'web'}
+    >
     <ScrollView
+      style={styles.screen}
       contentContainerStyle={[
         styles.container,
         { paddingBottom: styles.container.paddingBottom + insets.bottom },
@@ -190,6 +201,9 @@ export default function RegisterScreen() {
             placeholder="Masukkan nama pengguna"
             placeholderTextColor="#A6A0B3"
             autoCapitalize="none"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => emailInput.current?.focus()}
             editable={!loading}
             style={styles.input}
           />
@@ -208,12 +222,16 @@ export default function RegisterScreen() {
           />
 
           <TextInput
+            ref={emailInput}
             value={email}
             onChangeText={setEmail}
             placeholder="Masukkan email"
             placeholderTextColor="#A6A0B3"
             keyboardType="email-address"
             autoCapitalize="none"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordInput.current?.focus()}
             editable={!loading}
             style={styles.input}
           />
@@ -232,11 +250,15 @@ export default function RegisterScreen() {
           />
 
           <TextInput
+            ref={passwordInput}
             value={password}
             onChangeText={setPassword}
             placeholder="Masukkan kata sandi"
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showPassword}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => confirmPasswordInput.current?.focus()}
             editable={!loading}
             maxLength={20}
             style={styles.input}
@@ -280,11 +302,14 @@ export default function RegisterScreen() {
           />
 
           <TextInput
+            ref={confirmPasswordInput}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             placeholder="Masukkan ulang kata sandi"
             placeholderTextColor="#A6A0B3"
             secureTextEntry={!showConfirmPassword}
+            returnKeyType="done"
+            submitBehavior="blurAndSubmit"
             editable={!loading}
             maxLength={20}
             style={styles.input}
@@ -337,7 +362,6 @@ export default function RegisterScreen() {
         </Pressable>
 
         {/* LINK LOGIN */}
-        <GoogleSignInButton mode="register" disabled={loading} />
 
         <View style={styles.loginRow}>
           <Text style={styles.loginText}>
@@ -357,10 +381,15 @@ export default function RegisterScreen() {
         </View>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#F8F5FC',
+  },
   container: {
     flexGrow: 1,
     backgroundColor: '#F8F5FC',

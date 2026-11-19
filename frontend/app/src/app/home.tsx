@@ -172,16 +172,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Pressable
-            style={styles.profileButton}
-            onPress={() => router.push('/profile')}
-          >
-            <Ionicons
-              name="person-outline"
-              size={23}
-              color="#8067B7"
-            />
-          </Pressable>
         </View>
 
         <View style={styles.heroCard}>
@@ -432,19 +422,6 @@ const styles = StyleSheet.create({
     fontSize: 23,
     fontWeight: '700',
     color: '#3F384A',
-  },
-
-  profileButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
   },
 
   draftCard: {

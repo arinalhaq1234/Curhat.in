@@ -6,11 +6,13 @@ from unittest.mock import patch
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError
 from django.test import TestCase, override_settings
 from google.auth import crypt, jwt
 from google.auth.exceptions import TransportError
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from .models import GoogleIdentity
 
@@ -151,11 +153,11 @@ class GoogleLoginTests(TestCase):
         self.assertEqual(self.client.get("/api/auth/admin-check/").status_code, 403)
         self.assertEqual(self.client.post("/api/auth/logout/", {"refresh": data["refresh"]}).status_code, 200)
 
-    def test_register_existing_identity_rejected_with_login_hint(self):
+    def test_repeated_confirmation_reuses_existing_identity(self):
         first = self.register().data["data"]["user"]["id"]
         response = self.register()
-        self.assertEqual(response.status_code, 409)
-        self.assertIn("halaman Login", response.data["message"])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"]["user"]["id"], first)
         self.assertEqual(get_user_model().objects.count(), 1)
         self.assertEqual(GoogleIdentity.objects.get().user_id, first)
 
@@ -175,10 +177,61 @@ class GoogleLoginTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertFalse(get_user_model().objects.exists())
 
-    def test_login_unregistered_rejected_without_creating_account(self):
+    def test_login_checks_new_identity_without_creating_account_or_session(self):
+        for _ in range(2):
+            response = self.login()
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.data["success"])
+            self.assertEqual(response.data["data"], {
+                "requires_registration": True, "email": "person@gmail.com",
+            })
+        # Batal berarti tidak memanggil register; tidak ada akun atau token tersimpan.
+        self.assertFalse(get_user_model().objects.exists())
+        self.assertFalse(GoogleIdentity.objects.exists())
+        self.assertFalse(OutstandingToken.objects.exists())
+
+    def test_confirmed_registration_creates_session_and_returning_login_reuses_it(self):
+        self.assertTrue(self.login().data["data"]["requires_registration"])
+        response = self.register()
         response = self.login()
-        self.assertEqual(response.status_code, 404)
-        self.assertIn("mendaftar", response.data["message"])
+        self.assertEqual(response.status_code, 200)
+        data = response.data["data"]
+        user = GoogleIdentity.objects.get(subject="google-sub-1").user
+        self.assertEqual(data["user"]["id"], user.pk)
+        self.assertFalse(user.has_usable_password())
+        self.assertFalse(user.is_staff or user.is_superuser)
+        self.assertEqual(str(RefreshToken(data["refresh"])["user_id"]), str(user.pk))
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + data["access"])
+        self.assertEqual(self.client.get("/api/auth/profile/").status_code, 200)
+        second = self.login()
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.data["data"]["user"]["id"], user.pk)
+        self.assertEqual(get_user_model().objects.count(), 1)
+        self.assertEqual(GoogleIdentity.objects.count(), 1)
+
+    def test_registration_rechecks_email_after_initial_login_check(self):
+        self.assertTrue(self.login().data["data"]["requires_registration"])
+        user = get_user_model().objects.create_user("existing", "PERSON@gmail.com", "password123")
+        response = self.register()
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(GoogleIdentity.objects.exists())
+        self.assertFalse(OutstandingToken.objects.exists())
+        self.assertEqual(get_user_model().objects.count(), 1)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("password123"))
+
+    def test_registration_revalidates_token_after_initial_login_check(self):
+        self.assertTrue(self.login().data["data"]["requires_registration"])
+        expired = self.token(exp=int(time.time()) - 60, iat=int(time.time()) - 120)
+        self.assertEqual(self.register(expired).status_code, 401)
+        self.assertFalse(get_user_model().objects.exists())
+        self.assertFalse(GoogleIdentity.objects.exists())
+
+    def test_failed_identity_write_does_not_leave_an_orphan_user(self):
+        with patch("api.google_login.GoogleIdentity.objects.create", side_effect=DatabaseError("private detail")):
+            response = self.register()
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("private detail", str(response.data))
         self.assertFalse(get_user_model().objects.exists())
         self.assertFalse(GoogleIdentity.objects.exists())
 
@@ -205,8 +258,11 @@ class GoogleLoginTests(TestCase):
 
     def test_email_conflict_never_links_existing_account(self):
         user = get_user_model().objects.create_user("existing", "PERSON@gmail.com", "password123")
-        response = self.register()
-        self.assertEqual(response.status_code, 409)
+        for action in (self.register, self.login):
+            with self.subTest(action=action.__name__):
+                response = action()
+                self.assertEqual(response.status_code, 409)
+                self.assertNotIn("data", response.data)
         self.assertFalse(GoogleIdentity.objects.exists())
         self.assertEqual(get_user_model().objects.count(), 1)
         user.refresh_from_db()
@@ -215,6 +271,7 @@ class GoogleLoginTests(TestCase):
     def test_different_subject_same_email_rejected(self):
         self.register()
         self.assertEqual(self.register(self.token(sub="another-sub")).status_code, 409)
+        self.assertEqual(self.login(self.token(sub="another-sub")).status_code, 409)
         self.assertEqual(GoogleIdentity.objects.count(), 1)
 
     def test_privileged_or_inactive_linked_account_rejected(self):

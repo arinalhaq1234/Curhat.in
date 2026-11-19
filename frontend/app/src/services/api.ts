@@ -5,7 +5,12 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { cachedRead, clearReadCache, readOnce } from './readCache';
 
 export const getCachedProfile = (token: string) => cachedRead(token, '/api/auth/profile/');
-export const getCachedCurhatHistory = (token: string, page = 1) => cachedRead(token, `/api/curhat/history/?page=${page}`);
+type CurhatHistoryKind = 'teks' | 'audio';
+const curhatHistoryPath = (page: number, jenis?: CurhatHistoryKind) =>
+  `/api/curhat/history/?page=${page}${jenis ? `&jenis=${jenis}` : ''}`;
+
+export const getCachedCurhatHistory = (token: string, page = 1, jenis?: CurhatHistoryKind) =>
+  cachedRead(token, curhatHistoryPath(page, jenis));
 
 export class ApiError extends Error {
   status: number;
@@ -366,9 +371,11 @@ export async function sendAudioCurhat(
 // Mengambil daftar riwayat curhat pengguna yang sedang login
 export async function getCurhatHistory(
   accessToken: string,
-  page = 1
+  page = 1,
+  jenis?: CurhatHistoryKind
 ) {
-  return readOnce(accessToken, `/api/curhat/history/?page=${page}`, () => apiRequest(`/api/curhat/history/?page=${page}`, {
+  const path = curhatHistoryPath(page, jenis);
+  return readOnce(accessToken, path, () => apiRequest(path, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,

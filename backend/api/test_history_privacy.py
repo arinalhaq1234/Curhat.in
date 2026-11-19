@@ -87,6 +87,66 @@ class RiwayatPrivacyTests(TestCase):
         self.assertEqual(len(response.data["data"]["results"]), 10)
         self.assertNotIn("audio_file", response.content.decode())
 
+    def test_audio_filter_finds_old_record_before_pagination(self):
+        RiwayatCurhat.objects.bulk_create([
+            RiwayatCurhat(user=self.owner, teks=f"Teks terbaru {i}")
+            for i in range(15)
+        ])
+        client = self.api_for(self.owner)
+        first_page = client.get(reverse("curhat-history"))
+        self.assertTrue(all(item["jenis"] == "teks" for item in first_page.data["data"]["results"]))
+        with self.assertNumQueries(2):
+            response = client.get(reverse("curhat-history"), {"jenis": "audio"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"]["count"], 1)
+        self.assertIsNone(response.data["data"]["next"])
+        self.assertEqual([item["id"] for item in response.data["data"]["results"]], [self.audio_record.id])
+        self.assertNotIn("audio_file", response.content.decode())
+
+    def test_text_filter_includes_null_and_blank_audio_names(self):
+        blank = RiwayatCurhat.objects.create(user=self.owner, teks="Teks", audio_name="")
+        response = self.api_for(self.owner).get(reverse("curhat-history"), {"jenis": "teks"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"]["count"], 2)
+        self.assertEqual(
+            {item["id"] for item in response.data["data"]["results"]},
+            {self.text_record.id, blank.id},
+        )
+        self.assertTrue(all(item["jenis"] == "teks" for item in response.data["data"]["results"]))
+
+    def test_filtered_pagination_preserves_category_and_ownership(self):
+        records = [RiwayatCurhat.objects.create(user=self.owner, audio_name=f"audio-{i}.m4a") for i in range(12)]
+        RiwayatCurhat.objects.create(user=self.other, audio_name="other-private.m4a")
+        client = self.api_for(self.owner)
+        first = client.get(reverse("curhat-history"), {"jenis": "audio"}).data["data"]
+        self.assertEqual(first["count"], 13)
+        self.assertEqual(len(first["results"]), 10)
+        self.assertIn("jenis=audio", first["next"])
+        second = client.get(first["next"]).data["data"]
+        self.assertEqual(second["count"], 13)
+        self.assertEqual(len(second["results"]), 3)
+        self.assertIsNone(second["next"])
+        self.assertIn("jenis=audio", second["previous"])
+        results = first["results"] + second["results"]
+        self.assertTrue(all(item["jenis"] == "audio" for item in results))
+        self.assertEqual(len({item["id"] for item in results}), 13)
+        self.assertEqual({item["id"] for item in results}, {self.audio_record.id, *(record.id for record in records)})
+
+    def test_category_filters_do_not_expose_other_users_history(self):
+        for jenis in ("teks", "audio"):
+            response = self.api_for(self.other).get(reverse("curhat-history"), {"jenis": jenis})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data["data"]["count"], 0)
+            self.assertEqual(response.data["data"]["results"], [])
+            self.assert_no_private_content(response)
+            self.assertEqual(APIClient().get(reverse("curhat-history"), {"jenis": jenis}).status_code, 401)
+
+    def test_unknown_category_is_rejected(self):
+        response = self.api_for(self.owner).get(reverse("curhat-history"), {"jenis": "unknown"})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data["success"])
+        self.assert_no_private_content(response)
+
     def test_other_user_and_non_owner_admin_cannot_read_by_id(self):
         for user in (self.other, self.admin):
             client = self.api_for(user)

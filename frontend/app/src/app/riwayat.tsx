@@ -227,6 +227,7 @@ export default function RiwayatScreen() {
 
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
+  const [resolvedFilter, setResolvedFilter] = useState<FilterType | null>(null);
 
   const requestIdRef = useRef(0);
   const openingRef = useRef(false);
@@ -241,6 +242,8 @@ export default function RiwayatScreen() {
   // Mengambil daftar riwayat dari backend
   const loadHistory = useCallback(
     async (requestedPage = 1, isRefresh = false) => {
+      const jenis = activeFilter === 'Suara' ? 'audio'
+        : activeFilter === 'Teks' ? 'teks' : undefined;
       if (firstPageLoadingRef.current ||
           (requestedPage !== 1 && loadingMoreRef.current)) return;
       const requestId = ++requestIdRef.current;
@@ -271,12 +274,13 @@ export default function RiwayatScreen() {
         }
 
         if (isFirstPage && !hasDataRef.current) {
-          const cached = getCachedCurhatHistory(token)?.data;
-          if (Array.isArray(cached?.results)) {
+          const cached = getCachedCurhatHistory(token, 1, jenis)?.data;
+          if (Array.isArray(cached?.results) && cached.results.length > 0) {
             const items = cached.results.map(mapHistoryItem).filter((item: HistoryItem | null): item is HistoryItem => item !== null);
             setHistories(items);
             setPage(1);
             setHasNext(Boolean(cached.next));
+            setResolvedFilter(activeFilter);
             hasDataRef.current = true;
             setTimeout(() => {
               if (requestId === requestIdRef.current) setLoading(false);
@@ -287,7 +291,8 @@ export default function RiwayatScreen() {
         const response =
           await getCurhatHistory(
             token,
-            requestedPage
+            requestedPage,
+            jenis
           ) as HistoryApiResponse;
 
         if (requestId !== requestIdRef.current) {
@@ -331,6 +336,7 @@ export default function RiwayatScreen() {
         });
 
         setPage(requestedPage);
+        setResolvedFilter(activeFilter);
         hasDataRef.current = true;
         setHasNext(Boolean(response.data.next));
         setError('');
@@ -351,6 +357,7 @@ export default function RiwayatScreen() {
         setError(getErrorMessage(caughtError));
         setErrorSource('list');
         setFailedPage(requestedPage);
+        setResolvedFilter(activeFilter);
       } finally {
         const remaining = 500 - (Date.now() - startedAt);
         if (requestId === requestIdRef.current && remaining > 0) {
@@ -365,7 +372,7 @@ export default function RiwayatScreen() {
         }
       }
     },
-    [redirectToLogin]
+    [activeFilter, redirectToLogin]
   );
 
   // Muat ulang daftar setiap kali halaman dibuka
@@ -379,6 +386,9 @@ export default function RiwayatScreen() {
         firstPageLoadingRef.current = false;
         hasDataRef.current = false;
         setHistories([]);
+        setResolvedFilter(null);
+        setHasNext(false);
+        setPage(1);
         setLoading(true);
       };
     }, [loadHistory])
@@ -388,6 +398,7 @@ export default function RiwayatScreen() {
   const handleLoadMore = async () => {
     if (
       loading ||
+      resolvedFilter !== activeFilter ||
       refreshing ||
       firstPageLoadingRef.current ||
       failedPage === 1 ||
@@ -568,7 +579,7 @@ export default function RiwayatScreen() {
         )}
 
         {/* LOADING */}
-        {loading ? (
+        {loading || resolvedFilter !== activeFilter ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator
               size="large"

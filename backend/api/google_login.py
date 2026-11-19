@@ -73,35 +73,49 @@ def success(user):
     })
 
 
-@api_view(["POST"])
-@authentication_classes([])
-@permission_classes([AllowAny])
-def google_register(request):
+def authenticate_google(request, *, create_account):
     subject, email, error = verified_identity(request)
     if error is not None:
         return error
 
     User = get_user_model()
     try:
-        with transaction.atomic():
-            identity = GoogleIdentity.objects.select_related("user").filter(subject=subject).first()
-            if identity:
-                if forbidden_account(identity.user):
-                    return failure("Akun ini tidak diizinkan menggunakan login Google mobile.", 403)
-                return failure("Akun Google sudah terdaftar. Silakan masuk melalui halaman Login.", 409)
-            if User.objects.filter(email__iexact=email).exists():
-                return failure("Email sudah digunakan. Masuk menggunakan metode login akun yang sudah ada; akun tidak ditautkan otomatis.", 409)
-            user = User.objects.create_user(
-                username="google_" + uuid4().hex,
-                email=email, password=None, is_staff=False, is_superuser=False,
-            )
-            GoogleIdentity.objects.create(user=user, subject=subject, email=email)
-            if forbidden_account(user):
-                return failure("Akun ini tidak diizinkan menggunakan login Google mobile.", 403)
-            return success(user)
-    except IntegrityError:
-        # Constraint sub/email menghalangi akun ganda pada request bersamaan.
-        return failure("Identitas atau email sudah digunakan. Silakan masuk melalui halaman Login atau gunakan metode akun yang sesuai.", 409)
+        identities = GoogleIdentity.objects.select_related("user")
+        identity = identities.filter(subject=subject).first()
+        if identity is None:
+            # Pemilihan akun Google belum berarti pengguna setuju membuat akun.
+            # Login hanya memeriksa; endpoint register dipanggil setelah konfirmasi.
+            if not User.objects.filter(email__iexact=email).exists() and not create_account:
+                return Response({
+                    "success": True,
+                    "message": "Konfirmasi pendaftaran akun Curhat.in diperlukan.",
+                    "data": {"requires_registration": True, "email": email},
+                })
+
+            try:
+                with transaction.atomic():
+                    if create_account and not User.objects.filter(email__iexact=email).exists():
+                        user = User.objects.create_user(
+                            username="google_" + uuid4().hex,
+                            email=email, password=None, is_staff=False, is_superuser=False,
+                        )
+                        GoogleIdentity.objects.create(user=user, subject=subject, email=email)
+                        return success(user)
+            except IntegrityError:
+                # Batalkan akun baru jika permintaan lain sudah menyimpan identitas ini.
+                pass
+
+            identity = identities.filter(subject=subject).first()
+            if identity is None:
+                return failure(
+                    "Email ini sudah memiliki akun Curhat.in. Silakan masuk menggunakan "
+                    "metode akun yang sudah ada (username dan kata sandi jika mendaftar manual).", 409,
+                )
+
+        if forbidden_account(identity.user):
+            return failure("Akun ini tidak diizinkan menggunakan login Google mobile.", 403)
+        # Konfirmasi yang terkirim ulang tetap memakai akun yang sama.
+        return success(identity.user)
     except DatabaseError:
         return failure("Login belum dapat diproses. Silakan coba kembali.", 503)
 
@@ -109,17 +123,12 @@ def google_register(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def google_login(request):
-    subject, _email, error = verified_identity(request)
-    if error is not None:
-        return error
+def google_register(request):
+    return authenticate_google(request, create_account=True)
 
-    try:
-        identity = GoogleIdentity.objects.select_related("user").filter(subject=subject).first()
-        if identity is None:
-            return failure("Akun Google belum terdaftar. Silakan mendaftar terlebih dahulu.", 404)
-        if forbidden_account(identity.user):
-            return failure("Akun ini tidak diizinkan menggunakan login Google mobile.", 403)
-        return success(identity.user)
-    except DatabaseError:
-        return failure("Login belum dapat diproses. Silakan coba kembali.", 503)
+
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def google_login(request):
+    return authenticate_google(request, create_account=False)
